@@ -2,10 +2,10 @@
   'use strict';
   const styles = `
 .gc-watermark{position:absolute;inset:0;pointer-events:none;overflow:hidden;container-type:size;z-index:1}
-.gc-watermark .gc-mark{position:absolute;display:grid;place-items:center;align-content:center;gap:.1em;transform:translate(-50%,-50%) rotate(var(--mark-turn));text-align:center;line-height:1.1}
+.gc-watermark .gc-mark{position:absolute;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.15em;transform:translate(-50%,-50%) rotate(var(--mark-turn));text-align:center;line-height:1.1}
 .gc-watermark .gc-mark img{display:block;width:100%;height:auto;max-height:100%;margin:0;padding:0;object-fit:contain}
 .gc-watermark .gc-mark-text{font-size:inherit;max-width:100%;font-weight:850;font-family:system-ui,sans-serif;overflow-wrap:anywhere}
-.gc-watermark .gc-mark-combined img{max-height:75%;width:75%}
+.gc-watermark .gc-mark-combined img{max-height:58%;width:75%;flex-shrink:1}
 `;
   const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const number = (value, min, max, fallback) => {
@@ -24,6 +24,8 @@
     const count = Math.round(number(settings.quantity, 1, 9, 3));
     const opacity = number(settings.opacity, 1, 100, 15) / 100;
     const angle = number(settings.angle, -180, 180, 0);
+    const radians = angle * Math.PI / 180;
+    const rotationFit = Math.abs(Math.cos(radians)) + Math.abs(Math.sin(radians));
     const placeX = number(settings.x, 0, 100, 50) / 100;
     const placeY = number(settings.y, 0, 100, 50) / 100;
     const text = String(settings.text || 'GAMER COMAYAGUA').slice(0, 100);
@@ -45,13 +47,12 @@
       const rowCount = Math.min(columns, count - row * columns);
       const x = left + (columns - rowCount) * cellW / 2 + (index % columns + .5) * cellW;
       const y = top + (row + .5) * cellH;
-      const side = Math.min(size, cellW * .92) * .92;
-      const height = cellH * .88;
-      const unit = Math.min(side, height);
+      const unit = Math.min(size, cellW * .89, cellH * .89) / rotationFit;
       const combined = image && label ? ' gc-mark-combined' : '';
-      const font = Math.min(8, unit * (combined ? .18 : .28));
+      const typeScale = Math.min(combined ? .16 : .25, (combined ? 1.35 : 2.15) / Math.sqrt(text.length * 1.6));
+      const font = Math.min(8, unit * typeScale);
       return '<div class="gc-mark' + combined + '" style="left:' + x + '%;top:' + y +
-        '%;width:' + side + '%;height:' + height + '%;font-size:clamp(6px,' + font + 'cqmin,40px);--mark-turn:' + angle +
+        '%;width:' + unit + 'cqmin;height:' + unit + 'cqmin;font-size:clamp(4px,' + font + 'cqmin,40px);--mark-turn:' + angle +
         'deg">' + content + '</div>';
     }).join('');
     return '<div class="gc-watermark" aria-hidden="true" style="opacity:' + opacity + ';color:' + color + '">' + marks + '</div>';
