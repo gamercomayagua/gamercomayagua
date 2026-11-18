@@ -55,7 +55,8 @@ function calc(items,mode){
  var knownShipping=mode!=='local'||!!zone;
  var shipping=mode==='pickup'?0:mode==='local'?(zone?(eligible?0:zone.price):null):(eligible?0:CONFIG.shipping);
  var base=knownShipping&&shipping!==null?total+shipping:null;
- var prices={transfer:base===null?null:base,tigo:base===null?null:Math.ceil(base*(1+CONFIG.tigo)),cod:base===null?null:Math.ceil(base*(1+CONFIG.cod))};
+ var roundFeeTotal=function(rate){return base===null?null:Math.ceil(Math.round(base*(1+rate)*100)/100);};
+ var prices={transfer:base===null?null:base,tigo:roundFeeTotal(CONFIG.tigo),cod:roundFeeTotal(CONFIG.cod)};
  return {subtotal:total,shipping:shipping,base:base,prices:prices,tigoFee:prices.tigo===null?null:prices.tigo-base,codFee:prices.cod===null?null:prices.cod-base,codAllowed:total>=CONFIG.codMin,free:eligible,zone:zone};
 }
 function paymentRows(q){return '<div class="gc-paygrid"><div class="gc-payrow"><div><strong>Transferencia</strong><small>Sin comisión</small></div><b>'+money(q.prices.transfer)+'</b></div><div class="gc-payrow"><div><strong>Tigo Money</strong><small>Comisión del 10%: '+money(q.tigoFee)+'</small></div><b>'+money(q.prices.tigo)+'</b></div><div class="gc-payrow '+(!q.codAllowed?'gc-pay-disabled':'')+'"><div><strong>Pagar al recibir</strong><small>'+(q.codAllowed?'Comisión del 15%: '+money(q.codFee):'Compra mínima L 350 en productos')+'</small></div><b>'+(q.codAllowed?money(q.prices.cod):'NO DISPONIBLE')+'</b></div></div>';}
