@@ -112,8 +112,16 @@ function gcSetAllShipping(enabled){
   const lock=LockService.getScriptLock();lock.waitLock(20000);
   try{
     const ctx=gcSheet_(),num=Math.max(0,ctx.tab.getLastRow()-1);
-    if(num)ctx.tab.getRange(2,22,num,1).setValues(Array.from({length:num},()=>[enabled?'SI':'NO']));
+    let affected=0;
+    if(num){
+      const identifiers=ctx.tab.getRange(2,1,num,1).getDisplayValues();
+      const updates=identifiers.map(function(row){
+        if(!String(row[0]||'').trim())return [''];
+        affected++;return [enabled?'SI':'NO'];
+      });
+      ctx.tab.getRange(2,22,num,1).setValues(updates);
+    }
     SpreadsheetApp.flush();
-    return {ok:true,count:num,enabled:enabled};
+    return {ok:true,count:affected,enabled:enabled};
   }finally{lock.releaseLock();}
 }
