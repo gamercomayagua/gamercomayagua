@@ -18,7 +18,7 @@
 <script src="data/live-config.js"></script>
 <script>
 (()=>{'use strict';
-const $=id=>document.getElementById(id),money=n=>n==null?'Consultar precio':'L '+Number(n).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2}),escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c])),norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(),key=s=>norm(s).replace(/\s+/g,'');
+const $=id=>document.getElementById(id),money=n=>n==null?'Consultar precio':'L '+Number(n).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2}),escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(),key=s=>norm(s).replace(/\s+/g,'');
 let products=[],filtered=[],visible=24,cart={};try{cart=JSON.parse(localStorage.getItem('gc-cart')||'{}')||{}}catch{cart={}}
 const save=()=>{localStorage.setItem('gc-cart',JSON.stringify(cart));renderCounts()},toast=message=>{const t=$('toast');t.textContent=message;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2700)};
 function searchMatch(p,query){if(!query)return true;const all=[p.name,p.sku,p.code,p.category,p.subcategory,p.description,p.id].join(' ');const base=norm(all),compact=key(all);const candidates=[query,query.replace(/s24\s*ultra/gi,'s24u'),query.replace(/s24u/gi,'s24 ultra'),query.replace(/(\d+)\s*w/gi,'$1w')];return candidates.some(v=>{const words=norm(v).split(' ').filter(Boolean);return words.every(w=>base.includes(w)||compact.includes(w))})}
