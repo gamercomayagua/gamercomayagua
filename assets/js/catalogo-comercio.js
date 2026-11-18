@@ -103,7 +103,7 @@ function calc(items,mode){
  var subtotal=items.reduce(function(sum,i){return sum+cents(i.p.price||0)*i.qty;},0);
  var eligible=items.length>0&&items.every(function(i){return i.p.freeShipping;});
  var zone=mode==='local'?localDestination():null;
- var shipping=mode==='pickup'?0:mode==='local'?(zone&&zone.price!==null?(eligible?0:zone.price):null):(eligible?0:CONFIG.shipping);
+ var shipping=mode==='pickup'?0:mode==='local'?(zone?(eligible?0:zone.price):null):(eligible?0:CONFIG.shipping);
  var base=shipping===null?null:subtotal+cents(shipping);
  var codReason=store.cod===false?'Suspendido por la tienda':store.cod===null?'Por confirmar con la tienda':items.some(function(i){return i.p.cod===false;})?'Un producto del pedido no admite este pago':subtotal<cents(CONFIG.codMin)?'Compra mínima L 350 en productos':'';
  var fee=function(rate){return base===null?null:Math.round(base*Math.round(rate*100)/100);};
@@ -142,7 +142,16 @@ var fields=[['nombre','Cliente'],['telefono','Teléfono'],['departamento','Depar
 fields.forEach(function(f){var v=String(customer[f[0]]||'').trim();if(v)lines.push(f[1]+': '+v);});
 if(shippingMode==='local')lines.push('Tarifa base desde Col. Piedras Bonitas. Espera, parada adicional o calle adentro, si aplica, se cotiza por separado.');
 lines.push('','Solicito confirmar disponibilidad, envío y datos de pago.');return lines.join('\n');}
-function customerData(){var data={};[['nombre','customerName'],['telefono','customerPhone'],['departamento','customerDepartment'],['municipio','customerMunicipality'],['direccion','customerAddress']].forEach(function(pair){data[pair[0]]=$(pair[1])?$(pair[1]).value.trim():'';});return data;}
+function customerData(draft){
+ var fields={nombre:'customerName',telefono:'customerPhone',departamento:'customerDepartment',municipio:'customerMunicipality',direccion:'customerAddress'};
+ var data=Object.fromEntries(Object.entries(fields).map(function(pair){return [pair[0],$(pair[1])?.value.trim()||''];}));
+ if(draft===true||shippingMode==='national')return data;
+ var zone=shippingMode==='local'?localDestination():null;
+ data.departamento=zone?.department||'';
+ data.municipio=zone?.municipality||'';
+ if(shippingMode==='pickup')data.direccion='';
+ return data;
+}
 function quoteReference(now){
  var formatter=new Intl.DateTimeFormat('es-HN',{timeZone:'America/Tegucigalpa',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
  var parts=Object.fromEntries(formatter.formatToParts(now).map(function(p){return [p.type,p.value];}));
@@ -206,39 +215,69 @@ function showBankAccounts(root){
  panel.addEventListener('close',function(){panel.remove();});
  root.appendChild(panel);panel.showModal();
 }
-function cartView(refresh){var previous=refresh===true?customerData():null;currentDialog='cart';var root=wrap(`<div class="gc-checkout"><header class="gc-cart-head"><img alt="" src="${esc(logoUrl())}"><h2>Mi cotización</h2></header>
+function cartView(refresh){var previous=refresh===true?customerData(true):null;currentDialog='cart';var root=wrap(`<div class="gc-checkout"><header class="gc-cart-head"><img alt="" src="${esc(logoUrl())}"><h2>Mi cotización</h2></header>
 <div class="gc-cart-layout"><div class="gc-cart-main">
 <section class="gc-section"><h3>Productos</h3><div id="gcCartItems"></div></section>
-<section class="gc-section"><h3>Entrega y envío</h3><div class="gc-ship-choices"><label><input type="radio" name="gcShipping" value="national"><span>Envío nacional <small>L 110 (o gratis si aplica)</small></span></label><label><input type="radio" name="gcShipping" value="local"><span>Comayagua y alrededores <small>Tarifa según destino</small></span></label><label><input type="radio" name="gcShipping" value="pickup"><span>Retiro en tienda <small>Sin costo</small></span></label></div><div id="gcLocalField" class="gc-local-chooser" hidden><label for="gcLocalSearch">Buscar colonia, barrio o destino</label><input id="gcLocalSearch" type="search" placeholder="Ej. Piedras Bonitas, Mall, Lejamaní..." autocomplete="off"><label for="gcLocalZone">Elegir ubicación</label><select id="gcLocalZone"><option value="">Seleccioná un destino</option></select><p id="gcLocalCost" class="gc-local-cost" aria-live="polite">Seleccioná tu destino para calcular el envío.</p><p class="gc-local-smallprint">Tarifas desde Col. Piedras Bonitas. Incluye 10 min de cortesía. Espera adicional +L 15–20; parada extra +L 15 dentro de Comayagua o +L 20 en ruta interurbana. Jarín calle adentro: +L 5–10. Estos adicionales se confirman antes del cobro. Sin cobertura local en Siguatepeque ni La Libertad.</p></div></section><section class="gc-section"><h3>Datos de entrega</h3><div class="gc-customer-grid"><label>Nombre<input id="customerName" placeholder="Nombre del cliente" autocomplete="name" maxlength="100"></label><label>Celular<input id="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+504..." maxlength="30"></label><label>Departamento<select id="customerDepartment"></select></label><label>Municipio<select id="customerMunicipality"></select></label><label class="gc-full">Barrio, colonia o referencia<input id="customerAddress" maxlength="160" placeholder="Dirección para la entrega"></label></div></section></div><aside class="gc-cart-summary"><section class="gc-section"><h3>Resumen y forma de pago</h3><div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div><div id="gcSelectedTotal" class="gc-selected" aria-live="polite"></div><div id="gcCompare"></div></section><div class="gc-cart-actions"><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button><button type="button" id="gcPrint" class="btn gc-quote-button">Descargar cotización<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">3 Métodos de Pago<small>Comparar los 3 precios</small></button><button type="button" id="gcBank" class="btn outline">Cuentas de banco</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div><p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p></aside></div></div>`);
+<section class="gc-section"><h3>Entrega y envío</h3><div class="gc-ship-choices"><label><input type="radio" name="gcShipping" value="national"><span>Envío nacional <small>L 110 (o gratis si aplica)</small></span></label><label><input type="radio" name="gcShipping" value="local"><span>Comayagua y alrededores <small>Tarifa según destino</small></span></label><label><input type="radio" name="gcShipping" value="pickup"><span>Retiro en tienda <small>Sin costo</small></span></label></div><div id="gcLocalField" class="gc-local-chooser" hidden>
+ <div class="gc-local-fields"><label for="gcLocalSearch">Buscar barrio, colonia o destino<input id="gcLocalSearch" type="search" placeholder="Ej. Lomas del Río, Suyapa, Lejamaní" autocomplete="off"></label>
+ <label for="gcLocalZone">Zona de entrega<select id="gcLocalZone"><option value="">Seleccioná un destino</option></select></label></div>
+ <div id="gcLocalSummary" class="gc-local-summary" aria-live="polite"><div><strong id="gcLocalName">Elegí tu zona de entrega</strong><span id="gcLocalPlace">El costo se agrega a tu cotización.</span></div><b id="gcLocalCost" hidden></b></div>
+ <details class="gc-local-terms"><summary>Condiciones de entrega local</summary><p>Salida desde Col. Piedras Bonitas. Incluye 10 min de cortesía. Si solicitás espera adicional (L 15–20), una parada extra (L 15 en la ciudad o L 20 fuera) o entrega calle adentro en Jarín (L 5–10), acordaremos el cargo antes del cobro. Sin servicio local en Siguatepeque ni La Libertad.</p></details>
+</div></section>
+<section class="gc-section"><h3 id="gcCustomerHeading">Datos de entrega</h3><div class="gc-customer-grid">
+ <label>Nombre<input id="customerName" placeholder="Nombre del cliente" autocomplete="name" maxlength="100"></label>
+ <label>Celular<input id="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+504..." maxlength="30"></label>
+ <label id="gcDepartmentField">Departamento<select id="customerDepartment"></select></label>
+ <label id="gcMunicipalityField">Municipio<select id="customerMunicipality"></select></label>
+ <label id="gcAddressField" class="gc-full"><span id="gcAddressLabel">Barrio, colonia o referencia</span><input id="customerAddress" maxlength="160" placeholder="Dirección para la entrega"></label>
+</div></section></div><aside class="gc-cart-summary"><section class="gc-section"><h3>Resumen y forma de pago</h3><div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div><div id="gcSelectedTotal" class="gc-selected" aria-live="polite"></div><div id="gcCompare"></div></section><div class="gc-cart-actions"><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button><button type="button" id="gcPrint" class="btn gc-quote-button">Descargar cotización<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">3 Métodos de Pago<small>Comparar los 3 precios</small></button><button type="button" id="gcBank" class="btn outline">Cuentas de banco</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div><p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p></aside></div></div>`);
 var itemsBox=root.querySelector('#gcCartItems'),compare=root.querySelector('#gcCompare'),total=root.querySelector('#gcSelectedTotal'),
- localField=root.querySelector('#gcLocalField'),localSearch=root.querySelector('#gcLocalSearch'),localSelect=root.querySelector('#gcLocalZone'),localCost=root.querySelector('#gcLocalCost');
-function normalizeLocation(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+ localField=root.querySelector('#gcLocalField'),localSearch=root.querySelector('#gcLocalSearch'),localSelect=root.querySelector('#gcLocalZone'),
+ localName=root.querySelector('#gcLocalName'),localPlace=root.querySelector('#gcLocalPlace'),localCost=root.querySelector('#gcLocalCost');
 function fillLocations(){
- var query=normalizeLocation(localSearch.value.trim()),zones=window.GC_LOCAL_DELIVERIES||[],selected=localZone;
- localSelect.replaceChildren(new Option('Seleccioná una colonia o destino',''));
- var lastSector='';
- zones.filter(function(z){return !query||normalizeLocation(z.name+' '+(z.aliases||'')+' '+z.sector).includes(query);}).forEach(function(z){
-   var sector=z.sector;
-   if(sector!==lastSector){var group=document.createElement('optgroup');group.label=sector;localSelect.add(group);lastSector=sector;}
-   localSelect.lastElementChild.appendChild(new Option(z.name+' — '+(z.price===null?'Envío por confirmar':'L '+z.price),z.id));
+ var terms=norm(localSearch.value).split(' ').filter(Boolean),groups=new Map();
+ var matches=(window.GC_LOCAL_DELIVERIES||[]).filter(function(zone){
+  var words=norm([zone.name,zone.aliases,zone.sector,zone.municipality].join(' '));
+  return terms.every(function(term){return words.includes(term);});
  });
- var exists=[...localSelect.options].some(function(opt){return opt.value===selected;});
- localSelect.value=exists?selected:'';
- if(!exists&&selected)localZone='';
- localCost.textContent=localZone?(function(){var z=localDestination();return z?(z.price===null?'Envío por confirmar por WhatsApp.':'Tarifa base: '+money(z.price))+(z.ownSaleException?' · Venta propia: consultar si aplica envío gratis':'')+(z.jarin?' · Calle adentro: +L 5–10 a confirmar':''):'';})():'Seleccioná tu destino para calcular el envío.';
+ var selected=localDestination();
+ var placeholder=new Option(matches.length?'Seleccioná una colonia o destino':'Sin resultados para esa búsqueda','');
+ localSelect.replaceChildren(placeholder);
+ if(selected&&!matches.includes(selected))matches.unshift(selected);
+ matches.forEach(function(zone){
+  if(!groups.has(zone.sector)){
+   var group=document.createElement('optgroup');
+   group.label=zone.sector;localSelect.appendChild(group);groups.set(zone.sector,group);
+  }
+  groups.get(zone.sector).appendChild(new Option(zone.name+' — L '+zone.price,zone.id));
+ });
+ localSelect.value=localZone;
 }
-function updateLocalField(){localField.hidden=shippingMode!=='local';}
-localSearch.addEventListener('input',function(){fillLocations();totalsRender();});
-localSelect.addEventListener('change',function(){localZone=localSelect.value;fillLocations();totalsRender();});
-fillLocations();updateLocalField();
+function updateDeliveryFields(){
+ var local=shippingMode==='local',national=shippingMode==='national',zone=local?localDestination():null;
+ localField.hidden=!local;
+ root.querySelector('#gcDepartmentField').hidden=!national;
+ root.querySelector('#gcMunicipalityField').hidden=!national;
+ root.querySelector('#gcAddressField').hidden=!national&&!local;
+ root.querySelector('#gcCustomerHeading').textContent=local||national?'Datos de entrega':'Datos de contacto';
+ root.querySelector('#gcAddressLabel').textContent=local?'Dirección y referencia':'Barrio, colonia o referencia';
+ root.querySelector('#customerAddress').placeholder=local?'Ej. Casa azul frente al parque':'Dirección para la entrega';
+ localName.textContent=zone?zone.name:'Elegí tu zona de entrega';
+ localPlace.textContent=zone?[zone.municipality,zone.department].join(', '):'El costo se agrega a tu cotización.';
+ localCost.hidden=!zone;
+}
+localSearch.addEventListener('input',fillLocations);
+localSelect.addEventListener('change',function(){localZone=localSelect.value;updateDeliveryFields();totalsRender();});
+fillLocations();updateDeliveryFields();
 function itemRender(){itemsBox.replaceChildren();var items=cartItems();if(!items.length){itemsBox.innerHTML='<div class="empty">No tenés artículos en el carrito.</div>';return;}items.forEach(function(i){var row=wrap('<div class="gc-item"><div class="gc-quote-item">'+(i.p.photo?'<img src="'+esc(i.p.photo)+'" alt="" loading="lazy">':'')+'<div><strong>'+esc(i.p.name)+'</strong><small>'+money(i.p.price)+' c/u</small></div></div><div class="gc-item-side"><b>'+money(i.p.price*i.qty)+'</b><div class="qty"><button type="button" class="gc-dec" aria-label="Disminuir cantidad">−</button><span>'+i.qty+'</span><button type="button" class="gc-inc" aria-label="Aumentar cantidad">＋</button></div></div></div>');row.querySelector('.gc-dec').onclick=function(){cart[i.p.id]=i.qty-1;if(cart[i.p.id]<=0)delete cart[i.p.id];saveCart();itemRender();totalsRender();};row.querySelector('.gc-inc').disabled=i.qty>=maxQty(i.p);row.querySelector('.gc-inc').onclick=function(){cart[i.p.id]=Math.min(maxQty(i.p),i.qty+1);saveCart();itemRender();totalsRender();};itemsBox.appendChild(row);});}
-function totalsRender(){var items=cartItems(),q=calc(items,shippingMode);compare.innerHTML='<div class="gc-subtotal-line"><span>Subtotal de productos</span><b>'+money(q.subtotal)+'</b></div><div class="gc-subtotal-line"><span>Envío</span><b>'+(q.shipping===null?'Por confirmar':money(q.shipping))+'</b></div><details class="gc-cart-compare"><summary>Comparar las formas de pago</summary>'+paymentRows(q)+'</details>';
+function totalsRender(){var items=cartItems(),q=calc(items,shippingMode);if(q.zone)localCost.textContent=q.shipping===0?'Envío gratis':money(q.shipping);
+compare.innerHTML='<div class="gc-subtotal-line"><span>Subtotal de productos</span><b>'+money(q.subtotal)+'</b></div><div class="gc-subtotal-line"><span>Envío</span><b>'+(q.shipping===null?'Elegí la zona':money(q.shipping))+'</b></div><details class="gc-cart-compare"><summary>Comparar las formas de pago</summary>'+paymentRows(q)+'</details>';
 var cod=root.querySelector('input[name=gcPayment][value=cod]');cod.disabled=!q.codAllowed;if(!q.codAllowed&&payMode==='cod')payMode='transfer';
 root.querySelector('input[name=gcPayment][value='+payMode+']').checked=true;
 var chosen=q.prices[payMode],fee=payMode==='tigo'?q.tigoFee:payMode==='cod'?q.codFee:0;
-total.innerHTML='<div><span>Total con '+(payMode==='transfer'?'transferencia':payMode==='tigo'?'Tigo Money':'pago al recibir')+'</span><strong>'+(chosen===null?'Por confirmar':money(chosen))+'</strong></div>'+(chosen===null?(q.zone?'<p>Confirmá la tarifa de este destino por WhatsApp.</p>':'<p>Seleccioná un destino para calcular tu envío local.</p>'):payMode==='cod'?'<p>Anticipo: '+money(q.shipping+fee)+' · Saldo al recibir: '+money(q.subtotal)+'</p>':payMode==='tigo'?'<p>Incluye comisión de '+money(fee)+'</p>':'<p>Sin comisión adicional</p>');
+total.innerHTML='<div><span>Total con '+(payMode==='transfer'?'transferencia':payMode==='tigo'?'Tigo Money':'pago al recibir')+'</span><strong>'+(chosen===null?'Elegí la zona':money(chosen))+'</strong></div>'+(chosen===null?'<p>Seleccioná un destino para calcular tu envío local.</p>':payMode==='cod'?'<p>Anticipo: '+money(q.shipping+fee)+' · Saldo al recibir: '+money(q.subtotal)+'</p>':payMode==='tigo'?'<p>Incluye comisión de '+money(fee)+'</p>':'<p>Sin comisión adicional</p>');
 return q;}
-root.querySelectorAll('input[name=gcShipping]').forEach(function(input){input.checked=input.value===shippingMode;input.onchange=function(){shippingMode=this.value;updateLocalField();totalsRender();};});
+root.querySelectorAll('input[name=gcShipping]').forEach(function(input){input.checked=input.value===shippingMode;input.onchange=function(){shippingMode=this.value;updateDeliveryFields();totalsRender();};});
 root.querySelectorAll('input[name=gcPayment]').forEach(function(input){input.checked=input.value===payMode;input.onchange=function(){payMode=this.value;totalsRender();};});
 if(window.GC_HONDURAS)window.GC_HONDURAS.bind(root.querySelector('#customerDepartment'),root.querySelector('#customerMunicipality'));
 else {root.querySelector('#customerDepartment').outerHTML='<input id="customerDepartment" placeholder="Departamento">';root.querySelector('#customerMunicipality').outerHTML='<input id="customerMunicipality" placeholder="Municipio">';}
