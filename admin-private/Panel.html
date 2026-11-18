@@ -90,6 +90,8 @@ footer{text-align:center;font-size:11px;color:#718096;margin-top:23px}
  <div class="modal"><div class="modalhead"><h2>Editar producto</h2><button id="close" aria-label="Cerrar">×</button></div><div id="editingProduct"></div>
  <div class="editgrid">
  <label>Mi precio de venta (L)<input type="number" id="manualPrice" min="0.01" max="1000000" step="0.01" inputmode="decimal" placeholder="Vacío = porcentaje global"></label>
+ <label>Unidades disponibles<input type="number" id="productStock" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Vacío = desconocido"></label>
+ <button type="button" class="secondary" id="refreshSupplier">Consultar stock del proveedor</button><p class="modalnote" id="stockAge">Solo mostraremos unidades confirmadas.</p>
  <label class="toggle"><span>🚚 Envío gratis para este producto</span><input id="productFree" type="checkbox"></label>
  <label class="toggle"><span>📦 Marcar como AGOTADO</span><input id="productSold" type="checkbox"></label>
  <button class="primary red" id="saveProduct">Guardar cambios del producto</button>
@@ -106,13 +108,13 @@ function fmt(n){return 'L '+(Number(n)||0).toLocaleString('es-HN',{minimumFracti
 function html(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function loadSettings(){run('gcGetSettings',[],function(d){$('markup').value=d.markup;$('discount').value=d.reduction;$('effective').textContent=d.effective+'%';});}
 function draw(append){if(!append)$('cards').replaceChildren();var fragment=document.createDocumentFragment();items.forEach(function(p){
- var card=document.createElement('div');card.className='product';card.innerHTML=(p.photo?'<img loading="lazy" src="'+html(p.photo)+'" alt="">':'<div style="background:#eef2f8;display:grid;place-items:center;border-radius:9px">📦</div>')+'<div><h3>'+html(p.name)+'</h3><div class="base">Referencia: '+html(p.id)+' · Proveedor: '+fmt(p.base)+'</div><b class="price">'+fmt(p.price)+'</b><div class="tags">'+(p.manual!==''?'<span class="tag">PRECIO MANUAL</span>':'')+(p.shipping?'<span class="tag green">ENVÍO GRATIS</span>':'')+(p.soldOut?'<span class="tag gray">AGOTADO</span>':'')+'</div><button class="primary edit">Editar producto</button></div>';
+ var card=document.createElement('div');card.className='product';card.innerHTML=(p.photo?'<img loading="lazy" src="'+html(p.photo)+'" alt="">':'<div style="background:#eef2f8;display:grid;place-items:center;border-radius:9px">📦</div>')+'<div><h3>'+html(p.name)+'</h3><div class="base">Referencia: '+html(p.id)+' · Proveedor: '+fmt(p.base)+'</div><b class="price">'+fmt(p.price)+'</b><div class="tags">'+(p.stock!==null?'<span class="tag '+(p.stock<4?'gray':'green')+'">'+(p.stock<4?'AGOTADO':'Disponible: '+p.stock)+'</span>':'<span class="tag">Stock sin verificar</span>')+(p.manual!==''?'<span class="tag">PRECIO MANUAL</span>':'')+(p.shipping?'<span class="tag green">ENVÍO GRATIS</span>':'')+(p.soldOut?'<span class="tag gray">AGOTADO</span>':'')+'</div><button class="primary edit">Editar producto</button></div>';
  card.querySelector('button').onclick=function(){openEditor(p);};fragment.appendChild(card);
  });$('cards').appendChild(fragment);}
 function load(reset){if(reset){page=0;term=$('search').value;request++;}var token=request;
  $('resultsSummary').textContent='Buscando productos…';$('more').disabled=true;
  run('gcSearchProducts',[term,page],function(d){if(token!==request)return;items=d.items;draw(page>0);$('resultsSummary').textContent=d.total.toLocaleString('es-HN')+' coincidencias';$('pageInfo').textContent=d.items.length+' mostrados en esta página';$('more').style.display=d.more?'inline-block':'none';$('more').disabled=false;});}
-function openEditor(p){selected=p;$('editingProduct').textContent=p.name;$('manualPrice').value=p.manual===''?'':p.manual;$('productFree').checked=p.shipping;$('productSold').checked=p.soldOut;$('overlay').classList.add('open');}
+function openEditor(p){selected=p;$('editingProduct').textContent=p.name;$('manualPrice').value=p.manual===''?'':p.manual;$('productStock').value=p.stock===null?'':p.stock;$('stockAge').textContent=p.stockUpdated?'Última verificación: '+p.stockUpdated:'Sin verificación de stock';$('productFree').checked=p.shipping;$('productSold').checked=p.soldOut;$('overlay').classList.add('open');}
 function closeEditor(){$('overlay').classList.remove('open');selected=null;}
 $('close').onclick=closeEditor;$('overlay').onclick=function(e){if(e.target===$('overlay'))closeEditor();};
 $('search').oninput=function(){clearTimeout(window.gcSearchTimer);window.gcSearchTimer=setTimeout(function(){load(true);},320);};
@@ -123,7 +125,16 @@ $('saveMarkup').onclick=function(){var m=Number($('markup').value),d=Number($('d
 $('saveProduct').onclick=function(){if(!selected||saveLocked)return;saveLocked=true;$('saveProduct').disabled=true;
  var raw=$('manualPrice').value.trim(),price=raw===''?'':Number(raw);
  if(raw!=='' && (!Number.isFinite(price)||price<=0)){saveLocked=false;$('saveProduct').disabled=false;msg('Ingresá un precio válido o dejá vacío para usar el porcentaje.',true);return;}
- run('gcSaveProduct',[{id:selected.id,manual:price,shipping:$('productFree').checked,soldOut:$('productSold').checked}],function(){saveLocked=false;$('saveProduct').disabled=false;closeEditor();msg('Producto actualizado. Los cambios se guardaron en Google Sheets.');load(true);});};
+ run('gcSaveProduct',[{id:selected.id,manual:price,stock:$('productStock').value.trim(),shipping:$('productFree').checked,soldOut:$('productSold').checked}],function(){saveLocked=false;$('saveProduct').disabled=false;closeEditor();msg('Producto actualizado. Los cambios se guardaron en Google Sheets.');load(true);});};
+$('refreshSupplier').onclick=function(){
+ if(!selected)return;
+ $('refreshSupplier').disabled=true;$('stockAge').textContent='Consultando proveedor…';
+ run('gcRefreshSupplierStock',[selected.id],function(result){
+   $('refreshSupplier').disabled=false;$('productStock').value=result.stock;
+   $('productSold').checked=!result.available;
+   $('stockAge').textContent='Verificado: '+result.stock+' unidades';load(true);
+ });
+};
 function globalShipping(enabled){if(!confirm(enabled?'¿Activar ENVÍO GRATIS en todos los productos? Esto sustituirá los ajustes individuales.':'¿Quitar el envío gratis de TODOS los productos? Esto sustituirá los ajustes individuales.'))return;
  $('shipAllYes').disabled=$('shipAllNo').disabled=true;
  run('gcSetAllShipping',[enabled],function(d){$('shipAllYes').disabled=$('shipAllNo').disabled=false;msg((enabled?'Activado':'Desactivado')+' para '+d.count+' productos.');load(true);});}

@@ -50,7 +50,7 @@ function gcSearchProducts(term,page){
   const last=ctx.tab.getLastRow(),count=Math.max(0,last-1);
   if(!count)return {items:[],total:0,page:pageNo,more:false};
   const publicCols=ctx.tab.getRange(2,1,count,11).getValues();
-  const privateCols=ctx.tab.getRange(2,20,count,4).getValues();
+  const privateCols=ctx.tab.getRange(2,20,count,6).getValues();
   function normalize(v){return gcClean_(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
   function compact(v){return normalize(v).replace(/\s+/g,'');}
   const normalized=normalize(q),searchKey=compact(q);
@@ -66,7 +66,7 @@ function gcSearchProducts(term,page){
     if(found>=pageNo*GC_PRIVATE_PAGE_SIZE && items.length<GC_PRIVATE_PAGE_SIZE){
       items.push({id:id,name:name,base:Number(row[2])||0,price:Number(cfg[1])||0,manual:cfg[0]===''?'':Number(cfg[0]),
         shipping:gcClean_(cfg[2]).toUpperCase()==='SI',soldOut:gcClean_(cfg[3]).toUpperCase()==='AGOTADO',
-        photo:/^https:\/\//.test(gcClean_(row[10]))?gcClean_(row[10]):'',category:gcClean_(row[6])});
+        photo:/^https:\/\//.test(gcClean_(row[10]))?gcClean_(row[10]):'',category:gcClean_(row[6]),stock:cfg[4]===''?null:Number(cfg[4]),stockUpdated:cfg[5] instanceof Date?Utilities.formatDate(cfg[5],Session.getScriptTimeZone(),'dd/MM/yyyy HH:mm'):''});
     }
     found++;
   }
@@ -90,6 +90,12 @@ function gcSaveProduct(payload){
     // Solo cambiar columnas T, V y W. La fórmula U queda intacta.
     ctx.tab.getRange(row,20).setValue(manual);
     ctx.tab.getRange(row,22,1,2).setValues([[payload.shipping?'SI':'NO',payload.soldOut?'AGOTADO':'DISPONIBLE']]);
+    if(Object.prototype.hasOwnProperty.call(payload,'stock')){
+      const raw=payload.stock;
+      if(raw!==''&&raw!=null&&(!Number.isInteger(Number(raw))||Number(raw)<0||Number(raw)>1000000))throw new Error('Existencias: ingresa un entero de 0 a 1000000.');
+      ctx.tab.getRange(row,24,1,2).setValues([[raw===''||raw==null?'':Number(raw),raw===''||raw==null?'':new Date()]]);
+      if(raw!==''&&raw!=null&&Number(raw)<4)ctx.tab.getRange(row,23).setValue('AGOTADO');
+    }
     SpreadsheetApp.flush();
     return {ok:true,id:id,price:ctx.tab.getRange(row,21).getDisplayValue()};
   }finally{lock.releaseLock();}
@@ -106,6 +112,32 @@ function gcSaveMarkup(markup,reduction){
     return {ok:true,effective:n-r,markup:n,reduction:r};
   }finally{lock.releaseLock();}
 }
+function gcRefreshSupplierStock(id){
+ gcRequireOwner_();
+ const ctx=gcSheet_(),safe=gcClean_(id);
+ if(!/^\d{1,20}$/.test(safe))throw new Error('ID inválido');
+ const found=ctx.tab.getRange(2,1,Math.max(1,ctx.tab.getLastRow()-1),1).createTextFinder(safe).matchEntireCell(true).findNext();
+ if(!found)throw new Error('Producto no encontrado');
+ const row=found.getRow();
+ const url='https://www.phonedepothn.com/shop/product-details/'+encodeURIComponent(safe);
+ const resp=UrlFetchApp.fetch(url,{muteHttpExceptions:true,followRedirects:true});
+ if(resp.getResponseCode()!==200)throw new Error('Proveedor respondió '+resp.getResponseCode()+'. No cambié el stock.');
+ const body=resp.getContentText();
+ const text=body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/\s+/g,' ');
+ let match=text.match(/\bDisponible\s*:\s*(\d{1,7})\b/i);
+ if(!match)match=body.match(/["'](?:available_quantity|stock_quantity|availableStock)["']\s*:\s*["']?(\d{1,7})["']?/i);
+ if(!match)throw new Error('No se detectó un contador legible. La web puede cargar stock con JavaScript. No modifiqué existencias.');
+ const count=Number(match[1]);
+ const lock=LockService.getScriptLock();lock.waitLock(20000);
+ try{
+ const next=gcSheet_();if(next.tab.getRange(row,1).getDisplayValue().trim()!==safe)throw new Error('La fila cambió, vuelve a buscar');
+ next.tab.getRange(row,24,1,2).setValues([[count,new Date()]]);
+ if(count<4)next.tab.getRange(row,23).setValue('AGOTADO');
+ SpreadsheetApp.flush();
+ }finally{lock.releaseLock();}
+ return {ok:true,stock:count,available:count>=4};
+}
+
 function gcSetAllShipping(enabled){
   gcRequireOwner_();
   if(typeof enabled!=='boolean')throw new Error('Opción inválida');
