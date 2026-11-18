@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es"><head><base target="_top"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light">
+<style>
+:root{--navy:#14223e;--ink:#182846;--muted:#718199;--red:#e93c51;--bg:#f3f6fb;--line:#dce5ef;--green:#087e56}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px system-ui,-apple-system,'Segoe UI',sans-serif}
+button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+.bar{background:var(--navy);color:white;padding:17px 16px;position:sticky;top:0;z-index:5;box-shadow:0 7px 22px #14223e22}
+.bar-inner{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-weight:900;font-size:16px}.brand small{display:block;color:#c6d8f7;font-size:11px;font-weight:500;margin-top:3px}
+.lock{font-size:11px;border:1px solid #ffffff44;border-radius:30px;padding:6px 10px;white-space:nowrap}
+main{max-width:1000px;margin:auto;padding:17px 14px 45px}.grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}
+section{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 5px 20px #14223e08}
+h1{font-size:23px;line-height:1.1;margin:0 0 4px}h2{font-size:17px;margin:0 0 12px}p{color:var(--muted);margin:0 0 15px;line-height:1.5}
+.caption{color:#7889a6;font-size:11px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+.summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid var(--line)}
+.summary strong{font-size:27px;color:var(--green)}.summary small{font-size:12px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+label{display:block;font-size:12px;font-weight:750;color:#455673}
+input[type=number],input[type=search]{width:100%;height:48px;border:1px solid #cfd9e8;border-radius:10px;padding:0 12px;background:#fbfcff;outline:none;margin-top:6px;font-size:16px;color:var(--ink)}
+input:focus{border-color:#567ace;box-shadow:0 0 0 3px #567ace22}
+button.primary,button.secondary,button.warning{border:0;border-radius:11px;padding:12px 15px;font-weight:850;min-height:44px}
+button.primary{background:var(--navy);color:white}.primary.red{background:var(--red)}
+button.secondary{background:#edf2fa;color:#1d3158;border:1px solid #d7e1f0}
+button.warning{background:#e9f8f0;color:#066e48;border:1px solid #cbe9da}
+.full{width:100%;margin-top:13px}
+.smallnote{font-size:11px;color:#75849a;line-height:1.5;margin-top:9px}
+.ship-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.state{border:1px solid var(--line);background:#f8faff;border-radius:12px;padding:11px;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.state strong{font-size:13px}.state small{color:var(--muted);display:block;margin-top:3px;font-size:11px}
+.state button{font-size:12px;min-width:91px}
+.searchrow{margin-bottom:16px}
+.searchrow input{margin-top:8px;font-size:16px;height:52px}
+.cards{display:grid;gap:10px}
+.product{border:1px solid #dfe7f1;border-radius:13px;padding:10px;display:grid;grid-template-columns:76px 1fr;gap:12px;background:#fcfdff;min-width:0}
+.product img{width:76px;height:85px;object-fit:contain;background:#f4f6fb;border-radius:9px}
+.product h3{font-size:13px;line-height:1.3;margin:1px 0 5px}.product .base{font-size:11px;color:var(--muted)}
+.product b.price{color:#bc273e;font-size:17px}
+.product .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.tag{font-size:10px;color:#526881;background:#e9eff8;padding:4px 6px;border-radius:6px}
+.tag.green{color:#05734c;background:#ddf7ea}.tag.gray{color:#626b7b;background:#e7eaef}
+.product button.edit{margin-top:7px;min-height:36px;padding:7px 12px;font-size:12px}
+.morestuff{margin-top:13px;display:flex;justify-content:space-between;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+.alert{display:none;background:#f0f8f2;border:1px solid #bbdfc6;color:#087648;border-radius:11px;padding:11px 14px;margin-bottom:15px;font-size:13px}
+.alert.error{background:#fff0ef;color:#a92b32;border-color:#ffc4c4}.alert.visible{display:block}
+.overlay{position:fixed;inset:0;background:#0c193ab3;display:none;justify-content:center;align-items:center;padding:13px;z-index:11}
+.overlay.open{display:flex}.modal{background:#fff;width:min(100%,450px);max-height:94vh;overflow:auto;border-radius:18px;padding:19px;box-shadow:0 30px 90px #0004}
+.modalhead{display:flex;justify-content:space-between;gap:10px}.modalhead button{background:#eff2f7;border:0;border-radius:9px;height:36px;width:36px;font-size:20px}
+.editgrid{display:grid;gap:12px}.toggle{border:1px solid var(--line);padding:13px;border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.toggle span{font-size:13px;font-weight:700}.toggle input{height:21px;width:21px;accent-color:#16835b}
+#editingProduct{font-weight:850;margin:4px 0 12px;color:#1c3152}
+.modalnote{font-size:11px;color:#75849a}
+footer{text-align:center;font-size:11px;color:#718096;margin-top:23px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.bar{padding:14px}.brand{font-size:14px}section{padding:15px}main{padding:13px 11px 40px}.ship-options{grid-template-columns:1fr}.modal{padding:16px}.product{grid-template-columns:72px 1fr}.product img{width:72px;height:82px}}
+</style></head>
+<body>
+<header class="bar"><div class="bar-inner"><div class="brand">🎮 GAMER COMAYAGUA<small>Administración de precios y productos</small></div><div class="lock">🔒 Solo propietario</div></div></header>
+<main>
+<div id="notice" class="alert" role="status"></div>
+<div class="grid">
+<div>
+<section>
+ <span class="caption">PRECIOS · PRIVADO</span><h2>Mi control de precios</h2><p>Ajustá el porcentaje sin cambiar uno por uno los productos.</p>
+ <div class="summary"><span>Aumento efectivo<small>Visible solo como precio final</small></span><strong id="effective">—</strong></div>
+ <div class="controls">
+ <label>Aumentar %<input id="markup" type="number" min="0" max="200" step="0.1" inputmode="decimal" placeholder="10"></label>
+ <label>Restar puntos %<input id="discount" type="number" min="0" max="200" step="0.1" inputmode="decimal" placeholder="3"></label>
+ </div>
+ <button id="saveMarkup" class="primary full">Aplicar cambio de porcentajes</button>
+ <p class="smallnote">Ejemplo: 10% de aumento − 3 puntos = 7% efectivo. Los precios manuales tienen prioridad.</p>
+</section>
+<section style="margin-top:14px">
+ <span class="caption">ENVÍOS · PRIVADO</span><h2>Envío gratis</h2>
+ <p>Activá el envío gratis desde aquí. El cliente solo verá el resultado; nunca podrá cambiarlo.</p>
+ <div class="ship-options">
+ <div class="state"><span><strong>Activar en TODOS</strong><small>Promoción general</small></span><button id="shipAllYes" class="warning">Activar</button></div>
+ <div class="state"><span><strong>Quitar en TODOS</strong><small>Volver al envío normal</small></span><button id="shipAllNo" class="secondary">Desactivar</button></div>
+ </div><p class="smallnote">También podés elegir envío gratis en un solo producto desde el buscador. Activar/desactivar todos reemplaza las selecciones individuales y requiere confirmación.</p>
+</section></div>
+<section>
+ <span class="caption">BUSCADOR PARA CELULAR</span><h2>Buscar y editar artículos</h2>
+ <p>Buscá por nombre, modelo o código. Tocá «Editar» para asignar un precio propio, envío gratis o agotado.</p>
+ <div class="searchrow"><label for="search">Buscar producto</label><input id="search" type="search" placeholder="S24U, cargador 120W, teclado..." autocomplete="off"></div>
+ <div id="resultsSummary" class="smallnote">Cargando catálogo…</div>
+ <div class="cards" id="cards" style="margin-top:12px"></div>
+ <div class="morestuff"><span id="pageInfo"></span><button id="more" class="secondary" style="display:none">Mostrar más</button></div>
+</section></div>
+<footer>Panel privado de Gamer Comayagua · Datos guardados directamente en Google Sheets</footer>
+</main>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Editar producto">
+ <div class="modal"><div class="modalhead"><h2>Editar producto</h2><button id="close" aria-label="Cerrar">×</button></div><div id="editingProduct"></div>
+ <div class="editgrid">
+ <label>Mi precio de venta (L)<input type="number" id="manualPrice" min="0.01" max="1000000" step="0.01" inputmode="decimal" placeholder="Vacío = porcentaje global"></label>
+ <label class="toggle"><span>🚚 Envío gratis para este producto</span><input id="productFree" type="checkbox"></label>
+ <label class="toggle"><span>📦 Marcar como AGOTADO</span><input id="productSold" type="checkbox"></label>
+ <button class="primary red" id="saveProduct">Guardar cambios del producto</button>
+ <p class="modalnote">El cliente verá únicamente tu precio final, el estado del producto y si tiene envío gratis. Esta página es privada.</p>
+ </div></div>
+</div>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);},items=[],page=0,term='',selected=null,busy=false,request=0,saveLocked=false;
+function msg(value,error){var p=$('notice');p.textContent=value;p.className='alert visible'+(error?' error':'');window.scrollTo({top:0,behavior:'smooth'});}
+function run(name,args,ok){var bridge=google.script.run.withSuccessHandler(ok).withFailureHandler(function(e){busy=false;saveLocked=false;$('saveMarkup').disabled=false;$('saveProduct').disabled=false;msg(e&&e.message||'Error de conexión. Reintentá.',true);});bridge[name].apply(bridge,args||[]);}
+function fmt(n){return 'L '+(Number(n)||0).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function html(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function loadSettings(){run('gcGetSettings',[],function(d){$('markup').value=d.markup;$('discount').value=d.reduction;$('effective').textContent=d.effective+'%';});}
+function draw(append){if(!append)$('cards').replaceChildren();var fragment=document.createDocumentFragment();items.forEach(function(p){
+ var card=document.createElement('div');card.className='product';card.innerHTML=(p.photo?'<img loading="lazy" src="'+html(p.photo)+'" alt="">':'<div style="background:#eef2f8;display:grid;place-items:center;border-radius:9px">📦</div>')+'<div><h3>'+html(p.name)+'</h3><div class="base">Referencia: '+html(p.id)+' · Proveedor: '+fmt(p.base)+'</div><b class="price">'+fmt(p.price)+'</b><div class="tags">'+(p.manual!==''?'<span class="tag">PRECIO MANUAL</span>':'')+(p.shipping?'<span class="tag green">ENVÍO GRATIS</span>':'')+(p.soldOut?'<span class="tag gray">AGOTADO</span>':'')+'</div><button class="primary edit">Editar producto</button></div>';
+ card.querySelector('button').onclick=function(){openEditor(p);};fragment.appendChild(card);
+ });$('cards').appendChild(fragment);}
+function load(reset){if(reset){page=0;term=$('search').value;request++;}var token=request;
+ $('resultsSummary').textContent='Buscando productos…';$('more').disabled=true;
+ run('gcSearchProducts',[term,page],function(d){if(token!==request)return;items=d.items;draw(page>0);$('resultsSummary').textContent=d.total.toLocaleString('es-HN')+' coincidencias';$('pageInfo').textContent=d.items.length+' mostrados en esta página';$('more').style.display=d.more?'inline-block':'none';$('more').disabled=false;});}
+function openEditor(p){selected=p;$('editingProduct').textContent=p.name;$('manualPrice').value=p.manual===''?'':p.manual;$('productFree').checked=p.shipping;$('productSold').checked=p.soldOut;$('overlay').classList.add('open');}
+function closeEditor(){$('overlay').classList.remove('open');selected=null;}
+$('close').onclick=closeEditor;$('overlay').onclick=function(e){if(e.target===$('overlay'))closeEditor();};
+$('search').oninput=function(){clearTimeout(window.gcSearchTimer);window.gcSearchTimer=setTimeout(function(){load(true);},320);};
+$('more').onclick=function(){page++;load(false);};
+$('saveMarkup').onclick=function(){var m=Number($('markup').value),d=Number($('discount').value);if(!Number.isFinite(m)||!Number.isFinite(d)||m<0||d<0||d>m){msg('Revisá los valores: la reducción no puede superar el aumento.',true);return;}
+ if(!confirm('¿Aplicar el nuevo porcentaje a todos los artículos sin precio manual?'))return;
+ $('saveMarkup').disabled=true;run('gcSaveMarkup',[m,d],function(a){$('saveMarkup').disabled=false;$('effective').textContent=a.effective+'%';msg('Aumento efectivo actualizado: '+a.effective+'%.');load(true);});};
+$('saveProduct').onclick=function(){if(!selected||saveLocked)return;saveLocked=true;$('saveProduct').disabled=true;
+ var raw=$('manualPrice').value.trim(),price=raw===''?'':Number(raw);
+ if(raw!=='' && (!Number.isFinite(price)||price<=0)){saveLocked=false;$('saveProduct').disabled=false;msg('Ingresá un precio válido o dejá vacío para usar el porcentaje.',true);return;}
+ run('gcSaveProduct',[{id:selected.id,manual:price,shipping:$('productFree').checked,soldOut:$('productSold').checked}],function(){saveLocked=false;$('saveProduct').disabled=false;closeEditor();msg('Producto actualizado. Los cambios se guardaron en Google Sheets.');load(true);});};
+function globalShipping(enabled){if(!confirm(enabled?'¿Activar ENVÍO GRATIS en todos los productos? Esto sustituirá los ajustes individuales.':'¿Quitar el envío gratis de TODOS los productos? Esto sustituirá los ajustes individuales.'))return;
+ $('shipAllYes').disabled=$('shipAllNo').disabled=true;
+ run('gcSetAllShipping',[enabled],function(d){$('shipAllYes').disabled=$('shipAllNo').disabled=false;msg((enabled?'Activado':'Desactivado')+' para '+d.count+' productos.');load(true);});}
+$('shipAllYes').onclick=function(){globalShipping(true);};$('shipAllNo').onclick=function(){globalShipping(false);};
+loadSettings();load(true);
+})();
+</script>
+</body></html>
