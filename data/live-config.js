@@ -1,0 +1,1 @@
+// Configurar una vez la URL /exec del Apps Script de lectura pública.\nwindow.GC_LIVE_ENDPOINT = '';\n
