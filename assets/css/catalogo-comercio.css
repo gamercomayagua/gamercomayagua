@@ -172,3 +172,17 @@
  .gc-cart-summary .gc-cart-actions .btn{font-size:.8rem}
  .gc-checkout .gc-ship-choices label{min-height:44px}
 }
+
+.gc-cart-actions .gc-quote-button{background:#19588e;color:#fff;padding:9px 6px}
+.gc-cart-actions #gcPrintCompare{background:#124766}
+.gc-quote-button small{display:block;font-size:.66rem;font-weight:600;margin-top:4px}
+.gc-bank-panel{box-sizing:border-box;border:1px solid #d9e1ed;border-radius:15px;width:min(490px,calc(100% - 24px));max-height:calc(100% - 24px);padding:0;color:var(--ink)}
+.gc-bank-panel::backdrop{background:#182847a8}
+.gc-bank-panel header{position:sticky;top:0;display:flex;gap:12px;justify-content:space-between;background:white;padding:15px;border-bottom:1px solid #dce3ee}
+.gc-bank-panel header h2{font-size:1.18rem}.gc-bank-panel header p,.gc-bank-content p{margin:5px 0;font-size:.84rem}
+.gc-bank-panel header button{min-width:44px;min-height:44px;align-self:start}
+.gc-bank-content{padding:15px}.gc-bank-content dl{border:1px solid #dce3ee;border-radius:8px}
+.gc-bank-content dl div{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:9px 10px}
+.gc-bank-content dl div+div{border-top:1px solid #e6ebf2}
+.gc-bank-content dd{margin:0;font-weight:800;overflow-wrap:anywhere;text-align:right;user-select:all}
+.gc-bank-copy{margin-top:8px;min-height:44px}
