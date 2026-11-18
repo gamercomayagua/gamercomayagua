@@ -132,9 +132,6 @@
 .logo img{width:100%;height:100%;object-fit:contain;border-radius:inherit}
 .gc-old-price{font-size:.65em;font-weight:600;color:var(--muted)}
 .gc-detail-image{position:relative}
-.gc-watermark{position:absolute;inset:0;z-index:1;pointer-events:none;display:grid;place-items:center;grid-template-columns:repeat(var(--gc-mark-columns),1fr);opacity:var(--gc-mark-opacity);text-align:center;color:#142348;font-weight:900}
-.photo .gc-watermark img,.gc-detail-image .gc-watermark img{width:var(--gc-mark-size);height:auto;padding:0;object-fit:contain}
-.gc-watermark span{font-size:calc(var(--gc-mark-size) * .85)}
 .gc-sold-badge,.gc-free-badge,.photo .tag{z-index:2}
 
 /* Cotización en la tienda */
