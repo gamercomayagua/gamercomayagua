@@ -100,61 +100,88 @@ function pagePlan(items,size){
  for(let i=0;i<items.length;i+=size)pages.push(items.slice(i,i+size));
  return pages;
 }
+function roundBox(ctx,x,y,w,h,r,fill,stroke){
+ ctx.beginPath();ctx.roundRect(x,y,w,h,r);
+ ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}
+}
+function stockLabel(product,stockText){
+ return product.soldOut?'Agotado':stockText(product);
+}
 async function drawPage(options,items,index,total){
  const {title,prices,logo,watermark,phone,money,stockText}=options;
  const [brand,marks,photos]=await Promise.all([
   loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo)))
  ]);
- const width=1200,gap=17,inset=13;
+ const width=1200,margin=48,gap=24,top=228;
  const cols=items.length===1?1:items.length===3||items.length>6?3:2;
  const rows=Math.ceil(items.length/cols);
- const cardW=(width-88-(cols-1)*gap)/cols,photoH=cardW-inset*2;
- const nameSize=cols===1?38:26,priceSize=cols===1?42:32;
- const lineHeight=cols===1?46:32;
- const photoGap=22,priceGap=14,statusGap=13,statusSize=18,bottomPad=22;
- const refGap=7,refSize=15;
- const cardH=inset+photoH+photoGap+2*lineHeight+priceGap+priceSize+statusGap+
-  statusSize+refGap+refSize+bottomPad;
- const height=Math.ceil(282+rows*cardH+(rows-1)*gap);
+ const cardW=(width-2*margin-(cols-1)*gap)/cols;
+ const photoInset=14,photoW=cardW-2*photoInset,photoH=Math.min(photoW,730);
+ const pad=cols===1?32:cols===2?26:20;
+ const nameSize=cols===1?40:cols===2?28:23;
+ const leading=Math.ceil(nameSize*1.22),priceSize=cols===1?48:cols===2?36:30;
+ const priceBlock=prices?priceSize+17:0;
+ const nameOffset=photoInset+photoH+26;
+ const dividerOffset=nameOffset+2*leading+13;
+ const statusOffset=dividerOffset+18+priceBlock;
+ const cardH=statusOffset+39+19+20+23;
+ const gridH=rows*cardH+(rows-1)*gap;
+ const height=top+gridH+94;
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const ctx=canvas.getContext('2d',{alpha:false});
- ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#a91b36';ctx.fillRect(0,0,width,12);
- if(brand)picture(ctx,brand,42,32,98,98);
- ctx.fillStyle='#101e39';ctx.font='800 42px system-ui';ctx.fillText('GAMER COMAYAGUA',brand?157:44,80,980);
- ctx.fillStyle='#52647c';ctx.font='25px system-ui';ctx.fillText('WhatsApp  +'+phone.slice(0,3)+' '+phone.slice(3),brand?157:44,119);
- ctx.fillStyle='#152640';ctx.font='800 38px system-ui';ctx.fillText(title,44,181,1100);
+ ctx.textBaseline='top';
+ ctx.fillStyle='#f2f5f9';ctx.fillRect(0,0,width,height);
+ ctx.fillStyle='#101e35';ctx.fillRect(0,0,width,132);
+ ctx.fillStyle='#fa4b62';ctx.fillRect(margin,128,82,4);
+ if(brand){
+  roundBox(ctx,margin,26,80,80,15,'#fff');
+  picture(ctx,brand,margin+7,33,66,66);
+ }
+ const brandX=brand?margin+102:margin;
+ ctx.fillStyle='#fff';ctx.font='820 36px system-ui';ctx.fillText('GAMER COMAYAGUA',brandX,31,970);
+ ctx.fillStyle='#d6e1ef';ctx.font='21px system-ui';
+ ctx.fillText('WhatsApp  +'+phone.slice(0,3)+' '+phone.slice(3,7)+'-'+phone.slice(7),brandX,79);
+ ctx.fillStyle='#14233b';ctx.font='800 40px system-ui';ctx.fillText(title,margin,156,width-2*margin);
  items.forEach((product,i)=>{
-  const x=44+(i%cols)*(cardW+gap),y=214+Math.floor(i/cols)*(cardH+gap);
-  ctx.fillStyle='#f9fafc';ctx.fillRect(x,y,cardW,cardH);
-  ctx.strokeStyle='#dee5ee';ctx.lineWidth=2;ctx.strokeRect(x,y,cardW,cardH);
-  ctx.fillStyle='#eef2f7';ctx.fillRect(x+inset,y+inset,cardW-inset*2,photoH);
-  ctx.save();
+  const x=margin+(i%cols)*(cardW+gap),y=top+Math.floor(i/cols)*(cardH+gap);
+  roundBox(ctx,x,y,cardW,cardH,22,'#fff','#dae2ec');
+  const px=x+photoInset,py=y+photoInset;
+  roundBox(ctx,px,py,photoW,photoH,13,'#f1f4f8');
+  ctx.save();ctx.clip();
   if(product.soldOut)ctx.filter='grayscale(100%)';
-  const area=picture(ctx,photos[i],x+inset,y+inset,cardW-inset*2,photoH);
-  ctx.restore();
+  const area=picture(ctx,photos[i],px,py,photoW,photoH);
+  ctx.filter='none';
   if(area)markPhoto(ctx,marks,area);
-  else{ctx.fillStyle='#566981';ctx.font='22px system-ui';ctx.fillText('Foto por consultar',x+24,y+photoH/2,cardW-48);}
-  const textX=x+inset+5,textW=cardW-2*(inset+5);
-  const nameY=y+inset+photoH+photoGap;
-  const priceY=nameY+2*lineHeight+priceGap;
-  const hasPrice=prices||product.soldOut;
-  const statusY=hasPrice?priceY+priceSize+statusGap:priceY;
-  ctx.save();ctx.textBaseline='top';
-  ctx.fillStyle='#162644';ctx.font='800 '+nameSize+'px system-ui';
-  label(ctx,product.name,textX,nameY,textW,2,lineHeight);
-  if(hasPrice){
-   ctx.font='850 '+priceSize+'px system-ui';ctx.fillStyle=product.soldOut?'#566981':'#a91b36';
-   ctx.fillText(product.soldOut?'AGOTADO':money(product.price),textX,priceY,textW);
+  else{
+   ctx.fillStyle='#566981';ctx.font='600 22px system-ui';
+   ctx.textAlign='center';ctx.fillText('Foto por consultar',px+photoW/2,py+photoH/2-12,photoW-32);
   }
-  ctx.font='650 '+statusSize+'px system-ui';ctx.fillStyle='#455a75';
-  ctx.fillText(stockText(product),textX,statusY,textW);
-  ctx.font=refSize+'px system-ui';ctx.fillStyle='#566981';
-  ctx.fillText('Ref. '+product.id,textX,statusY+statusSize+refGap,textW);
   ctx.restore();
+  const textX=x+pad,textW=cardW-2*pad,dividerY=y+dividerOffset,statusY=y+statusOffset;
+  ctx.fillStyle='#152640';ctx.font='790 '+nameSize+'px system-ui';
+  label(ctx,product.name,textX,y+nameOffset,textW,2,leading);
+  ctx.fillStyle='#e3eaf2';ctx.fillRect(textX,dividerY,textW,1);
+  if(prices&&!product.soldOut){
+   ctx.font='850 '+priceSize+'px system-ui';ctx.fillStyle='#ae1739';
+   ctx.fillText(money(product.price),textX,dividerY+15,textW);
+  }
+  const available=product.stock!==null&&!product.soldOut;
+  const status=stockLabel(product,stockText);
+  const pillBg=product.soldOut?'#fbe9ed':available?'#e4f4ec':'#edf2f8';
+  ctx.font='690 '+(cols===3?17:19)+'px system-ui';
+  roundBox(ctx,textX,statusY,Math.min(textW,Math.ceil(ctx.measureText(status).width)+32),39,19,pillBg);
+  ctx.fillStyle=product.soldOut?'#91243e':available?'#136345':'#40546d';
+  ctx.textBaseline='middle';ctx.fillText(status,textX+16,statusY+20,textW-32);
+  ctx.textBaseline='top';
+  ctx.font='16px system-ui';ctx.fillStyle='#5b6d84';
+  ctx.fillText('Ref. '+(product.ref||product.id),textX,statusY+54,textW);
  });
- ctx.strokeStyle='#dee5ee';ctx.beginPath();ctx.moveTo(44,height-55);ctx.lineTo(width-44,height-55);ctx.stroke();
- ctx.fillStyle='#405675';ctx.font='20px system-ui';ctx.fillText('Precios y disponibilidad sujetos a confirmación',44,height-24,890);
- ctx.textAlign='right';ctx.fillText((index+1)+' / '+total,width-44,height-24);
+ const footerY=top+gridH+45;
+ ctx.fillStyle='#566980';ctx.font='18px system-ui';
+ ctx.fillText('Precios y existencias sujetos a confirmación',margin,footerY,width-2*margin-96);
+ ctx.textAlign='right';ctx.font='750 18px system-ui';
+ ctx.fillText((index+1)+' / '+total,width-margin,footerY);
  return {canvas,missing:photos.filter((image,i)=>!image&&items[i].photo).length};
 }
 const blob=(canvas,type)=>new Promise((resolve,reject)=>canvas.toBlob(data=>data?resolve(data):reject(Error('El navegador no pudo crear el archivo.')),type,.9));
@@ -190,14 +217,15 @@ function printOriginal(options,pages,start,end){
   return '<article><header>'+(logo?'<img src="'+escape(logo)+'" alt="">':'')+'<div><strong>GAMER COMAYAGUA</strong><small>WhatsApp +'+escape(options.phone)+'</small></div></header>'+
    '<h1>'+escape(options.title)+'</h1><div class="grid" style="--columns:'+columns+'">'+items.map(product=>
     '<section><div class="photo">'+(product.photo?'<img class="product-photo'+(product.soldOut?' sold':'')+'" src="'+escape(product.photo)+'" alt="">'+marks:'<span>Foto por consultar</span>')+
-    '</div><strong>'+escape(product.name)+'</strong>'+
-    ((options.prices||product.soldOut)?'<b>'+escape(product.soldOut?'AGOTADO':options.money(product.price))+'</b>':'')+
-    '<small>Ref. '+escape(product.id)+' · '+escape(options.stockText(product))+'</small></section>'
+    '</div><div class="copy"><strong>'+escape(product.name)+'</strong><div class="product-meta">'+
+    ((options.prices&&!product.soldOut)?'<b>'+escape(options.money(product.price))+'</b>':'')+
+    '<span class="stock'+(product.soldOut?' out':product.stock!==null?' in':'')+'">'+escape(stockLabel(product,options.stockText))+'</span>'+
+    '<small>Ref. '+escape(product.ref||product.id)+'</small></div></div></section>'
    ).join('')+'</div><footer>Precios y disponibilidad sujetos a confirmación <span>'+String(start+i+1)+' / '+pages.length+'</span></footer></article>';
  }).join('');
  win.document.open();
  win.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escape(options.title)+' | Gamer Comayagua</title><style>'+styles+
-  '*{box-sizing:border-box}body{margin:0;background:#edf2f8;font:14px system-ui,sans-serif;color:#172844}.tools{text-align:center;padding:12px}.tools button{font:inherit;font-weight:800;background:#a91b36;color:white;padding:11px 16px;border:0;border-radius:8px}article{margin:0 auto 18px;padding:22px;background:white;border-top:4px solid #a91b36;width:min(97%,850px);break-after:page}article:last-child{break-after:auto}header{display:flex;align-items:center;gap:10px}header img{width:46px;height:46px;object-fit:contain}header strong{font-size:19px}small{display:block;color:#52647c}.grid{display:grid;grid-template-columns:repeat(var(--columns),minmax(0,1fr));gap:9px}section{padding:8px;min-width:0;border:1px solid #e0e7f0;border-radius:8px;break-inside:avoid}section strong,section b{display:block;line-height:1.3}section strong{margin:11px 2px 0}section b{margin:9px 2px 0;color:#a91b36;font-size:17px}section small{margin:8px 2px 3px;line-height:1.35}.photo{position:relative;display:grid;place-items:center;overflow:hidden;background:#f4f7fa;aspect-ratio:1}.photo>.product-photo{width:100%;height:100%;object-fit:contain}.photo .sold{filter:grayscale(1)}h1{font-size:21px;margin:10px 0}footer{font-size:10px;margin-top:12px;color:#52647c}footer span{float:right}@page{size:letter;margin:10mm}@media print{body{background:white}.tools{display:none}article{width:auto;margin:0;padding:0}.photo{max-height:52mm}.grid:has(section:only-child) .photo{max-height:145mm}article,section{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media screen and (max-width:550px){article{padding:10px}section{font-size:12px}section b{font-size:14px}}</style></head><body><div class="tools"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>'+body+'</body></html>');
+  '*{box-sizing:border-box}body{margin:0;background:#edf2f8;font:14px system-ui,sans-serif;color:#172844}.tools{text-align:center;padding:12px}.tools button{font:inherit;font-weight:800;background:#a91b36;color:white;padding:11px 16px;border:0;border-radius:8px}article{margin:0 auto 18px;padding:22px;background:#f2f5f9;border-top:4px solid #a91b36;width:min(97%,850px);break-after:page}article:last-child{break-after:auto}header{display:flex;align-items:center;gap:10px;background:#101e35;color:white;border-radius:8px;padding:10px}header small{color:#d6e1ef}header img{width:46px;height:46px;object-fit:contain}header strong{font-size:19px}small{display:block;color:#52647c}.grid{display:grid;grid-template-columns:repeat(var(--columns),minmax(0,1fr));gap:9px}section{padding:7px;background:white;min-width:0;border:1px solid #dae2ec;border-radius:10px;break-inside:avoid;display:flex;flex-direction:column}.copy{padding:10px 6px 7px;flex:1;display:flex;flex-direction:column}.copy strong{display:block;line-height:1.28;flex:1;margin-bottom:8px}.product-meta{border-top:1px solid #e3eaf2;padding-top:8px;display:grid;justify-items:start;gap:6px}.copy b{color:#ae1739;font-size:17px}.stock{background:#edf2f8;color:#40546d;font-size:10px;font-weight:700;border-radius:20px;padding:3px 8px}.stock.in{background:#e4f4ec;color:#136345}.stock.out{background:#fbe9ed;color:#91243e}.copy small{font-size:10px;overflow-wrap:anywhere}.photo{position:relative;display:grid;place-items:center;overflow:hidden;background:#f1f4f8;aspect-ratio:1;border-radius:7px}.photo>.product-photo{width:100%;height:100%;object-fit:contain}.photo .sold{filter:grayscale(1)}h1{font-size:21px;margin:13px 0}footer{font-size:10px;margin-top:15px;padding:0 2px 3px;color:#52647c}footer span{float:right}@page{size:letter;margin:10mm}@media print{body{background:white}.tools{display:none}article{width:auto;margin:0;padding:0}.photo{max-height:46mm}.grid:has(section:nth-child(7)) .photo{max-height:41mm}.grid:has(section:only-child) .photo{max-height:145mm}article,section{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media screen and (max-width:550px){article{padding:10px}section{font-size:12px}section b{font-size:14px}}</style></head><body><div class="tools"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>'+body+'</body></html>');
  win.document.close();
  return true;
 }

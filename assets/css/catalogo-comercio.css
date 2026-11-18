@@ -223,3 +223,6 @@
  .gc-export-grid{grid-template-columns:1fr}
  .gc-catalog-tools .btn{flex:1 1 auto}
 }
+
+#ownOnly{min-height:36px;padding:7px 10px}
+#ownOnly[aria-pressed=true]{background:#162640;color:#fff;border-color:#162640}

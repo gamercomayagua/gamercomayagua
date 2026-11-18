@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 var PHONE='50431517755';
 var CONFIG={shipping:110,tigo:0.10,cod:0.15,codMin:350};
 var catalogReady=false;
-var store={cod:null,watermark:window.GC_BOOT_WATERMARK},selectedCatalog=new Set(),selectingCatalog=false,onlyPromos=false,all=[],listed=[],offset=24,cart=Object.create(null),shippingMode='national',localZone='',payMode='transfer',currentDialog='';
+var store={cod:null,watermark:window.GC_BOOT_WATERMARK},selectedCatalog=new Set(),selectingCatalog=false,onlyPromos=false,onlyOwn=false,all=[],listed=[],offset=24,cart=Object.create(null),shippingMode='national',localZone='',payMode='transfer',currentDialog='';
 var money=function(n){return n===null||n===undefined?'Consultar precio':'L '+Number(n).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2});};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
 var norm=function(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();};
@@ -23,8 +23,8 @@ function prepare(list){return (Array.isArray(list)?list:[]).filter(function(p){r
  }
  var stock=p.stock===null||p.stock===undefined||p.stock===''?null:Number(p.stock);
  stock=Number.isInteger(stock)&&stock>=0?stock:null;
- var soldOut=p.soldOut===true||p.status==='AGOTADO'||(stock!==null&&stock<4);
- return {id:String(p.id),name:String(p.name),price:integer(p.price),regularPrice:integer(p.regularPrice),discount:Number(p.discount)||0,promotion:p.promotion===true||integer(p.regularPrice)>integer(p.price),cod:p.cod!==false,sku:String(p.sku||''),code:String(p.code||''),category:String(p.category||''),subcategory:String(p.subcategory||''),description:String(p.description||''),photo:cleanUrl(p.photo),freeShipping:p.freeShipping===true||p.freeShipping==='SI',soldOut:soldOut,stock:stock,stockVerifiedAt:p.stockVerifiedAt?String(p.stockVerifiedAt):null};
+ var soldOut=p.soldOut===true||p.status==='AGOTADO'||(stock!==null&&stock<(p.own?1:4));
+ return {id:String(p.id),ref:String(p.ref||p.id),own:p.own===true,name:String(p.name),price:integer(p.price),regularPrice:integer(p.regularPrice),discount:Number(p.discount)||0,promotion:p.promotion===true||integer(p.regularPrice)>integer(p.price),cod:p.cod!==false,sku:String(p.sku||''),code:String(p.code||''),category:String(p.category||''),subcategory:String(p.subcategory||''),description:String(p.description||''),photo:cleanUrl(p.photo),freeShipping:p.freeShipping===true||p.freeShipping==='SI',soldOut:soldOut,stock:stock,stockVerifiedAt:p.stockVerifiedAt?String(p.stockVerifiedAt):null};
 });}
 function stockText(p){
  if(p.soldOut)return 'AGOTADO · No disponible';
@@ -56,17 +56,17 @@ function promoBadge(p){
  return '<span class="gc-promo-badge'+(store.promoColor==='yellow'?' gc-promo-yellow':'')+'">'+label+'</span>';
 }
 function productPrice(p){return (p.regularPrice>p.price?'<del class="gc-old-price">'+money(p.regularPrice)+'</del> ':'')+money(p.price);}
-function match(p,q){if(!q)return true;var alltext=[p.name,p.sku,p.code,p.id,p.category,p.subcategory,p.description].join(' '),words=norm(q).split(' ').filter(Boolean),text=norm(alltext),k=compact(alltext);
+function match(p,q){if(!q)return true;var alltext=[p.name,p.sku,p.code,p.ref,p.category,p.subcategory,p.description].join(' '),words=norm(q).split(' ').filter(Boolean),text=norm(alltext),k=compact(alltext);
 if(words.every(function(w){return text.includes(w)||k.includes(w);}))return true;
 var qq=compact(q),alternatives=[qq,qq.replace(/ultra/g,'u'),qq.replace(/s24u/g,'s24ultra'),qq.replace(/s23u/g,'s23ultra')];
 return alternatives.some(function(x){return x&&k.includes(x);});
 }
 function selectCategory(){var select=$('category'),value=select.value,choices=[...new Set(all.map(function(p){return p.category;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'es');});select.replaceChildren(new Option('Todas las categorías',''));choices.forEach(function(x){select.add(new Option(x,x));});select.value=choices.includes(value)?value:'';}
-function filter(){var q=$('search').value.trim(),cat=$('category').value,sort=$('sort').value;listed=all.filter(function(p){return(!onlyPromos||(p.promotion&&!p.soldOut))&&(!cat||p.category===cat)&&match(p,q);});
+function filter(reset){var q=$('search').value.trim(),cat=$('category').value,sort=$('sort').value;listed=all.filter(function(p){return(!onlyOwn||p.own)&&(!onlyPromos||(p.promotion&&!p.soldOut))&&(!cat||p.category===cat)&&match(p,q);});
 if(sort==='name')listed.sort(function(a,b){return a.name.localeCompare(b.name,'es');});
 if(sort==='priceup')listed.sort(function(a,b){return(a.price===null?Infinity:a.price)-(b.price===null?Infinity:b.price);});
 if(sort==='pricedown')listed.sort(function(a,b){return(b.price===null?-1:b.price)-(a.price===null?-1:a.price);});
-offset=24;render();}
+if(reset!==false)offset=24;render();}
 function updateCatalogControls(){
  $('gcSelectCatalog').setAttribute('aria-pressed',String(selectingCatalog));
  $('gcCreateCatalog').disabled=selectedCatalog.size===0;
@@ -117,12 +117,12 @@ function detail(p){
  var q=calc([{p:p,qty:1}],'national');
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'<p class="gc-detail-ref">Código: '+esc(p.code||'No indicado')+' · Ref. '+esc(p.id)+'</p></div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+description+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><details class="gc-detail-more"><summary>Consultar envíos y formas de pago</summary>'+paymentRows(q)+'</details></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'<p class="gc-detail-ref">Código: '+esc(p.code||'No indicado')+' · Ref. '+esc(p.ref)+'</p></div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+description+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><details class="gc-detail-more"><summary>Consultar envíos y formas de pago</summary>'+paymentRows(q)+'</details></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></div>');
 
  var img=box.querySelector('.gc-product-image');if(img)img.onerror=function(){img.replaceWith(document.createTextNode('Imagen no disponible'));};
  if(p.soldOut)box.classList.add('gc-soldout-detail');
  box.querySelector('.gc-add').onclick=function(){add(p);};
- box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.id+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
+ box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.ref+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
  box.querySelector('.gc-share-ficha').onclick=function(){openCatalog('product',p);};
  open(box,'product');
 }
@@ -297,23 +297,68 @@ async function fetchLive(url,first){
  if(parts.some(function(part){return !part.ok||!Array.isArray(part.products);}))throw Error('Página incompleta');
  return initial.products.concat(parts.flatMap(function(part){return part.products;}));
 }
+var ownEndpoint='https://script.google.com/macros/s/AKfycbyXFSUVkTIstSCDjBxkignIdsqoiQKgV1_5Y68nMEMSmJ-2aTPjcgjgCBjIL6xokFs/exec';
+var oldSite='https://sdcomayagua.github.io/sdcomayagua/';
+function ownPhoto(product,mirrors){
+ var mirror=mirrors[product.id],image=product.image;
+ var path=mirror&&mirror.source===image?mirror.path:image;
+ return /^assets\/(?:catalog|products)\/[\w.-]+\.(?:webp|jpg|jpeg|png)$/i.test(path)?new URL(path,oldSite).href:cleanUrl(path);
+}
+function ownProducts(rows,mirrors){
+ var ids=new Set();
+ return prepare(rows.flatMap(function(p){
+  if(!p||p.active!==true||!p.name||!/^[a-zA-Z0-9_-]{1,43}$/.test(p.id||'')||ids.has(p.id))return [];
+  ids.add(p.id);
+  var regular=integer(p.price),offer=integer(p.promoPrice),discounted=offer!==null&&offer<regular;
+  return [{id:'propio-'+p.id,ref:p.code||p.id,own:true,code:p.code,name:p.name,category:p.category,
+   price:discounted?offer:regular,regularPrice:discounted?regular:null,promotion:discounted||Boolean(p.promoText),
+   photo:ownPhoto(p,mirrors),stock:p.stock,description:p.description,cod:p.codAllowed===true}];
+ }));
+}
+function catalogKey(p){return p.code?compact(p.code)+'|'+norm(p.name):'';}
 async function init(){
  try{var local=JSON.parse(localStorage.getItem('gc-mark-config')||'null');if(local)store=Object.assign({},store,local);}catch(error){}
  applyLogo();
- var url=catalogUrl();
- var first=url?jsonp(url,{offset:'0',limit:'1'}):null;
- if(first)first.then(function(data){if(data.ok)updateStore(data.store);},function(){});
- var live=first?fetchLive(url,first).then(function(rows){return {rows:rows};},function(error){return {error:error};}):null;
- try{
-  all=prepare(await fetchStatic());selectCategory();filter();
-  $('syncStatus').textContent='Catálogo Gamer Comayagua · '+all.length.toLocaleString('es-HN')+' artículos';
- }catch(e){console.error(e);$('resultCount').textContent='Catálogo no disponible';}
- if(live){
-  var result=await live;
-  if(result.rows?.length){all=prepare(result.rows);selectCategory();filter();if(currentDialog==='cart')cartView(true);$('syncStatus').textContent='✓ Precios sincronizados con Google Sheets';}
-  else $('syncStatus').textContent='Copia pública · confirmá el precio al pedir';
+ var supplier=[],own=[],mirrors={},ownLive=false;
+ function updateCatalog(){
+  var ownKeys=new Set(own.map(catalogKey).filter(Boolean));
+  all=own.concat(supplier.filter(function(p){return !ownKeys.has(catalogKey(p));}));
+  var retained=all.some(function(p){return p.own;});
+  $('ownOnly').hidden=!retained;
+  if(!retained){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}
+  selectCategory();filter(false);
+  if(currentDialog==='cart')cartView(true);
  }
+ var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'1'}):null;
+ if(first)first.then(function(data){if(data.ok)updateStore(data.store);},function(){});
+ var supplierLive=first?fetchLive(url,first).then(function(rows){return rows;},function(){return null;}):Promise.resolve(null);
+ var ownSnapshot=fetch('data/productos-propios.json').then(function(response){
+  if(!response.ok)throw Error('Copia de productos propios no disponible');
+  return response.json();
+ }).then(function(data){
+  mirrors=data.mirrors||{};
+  if(!ownLive){own=ownProducts(data.products,mirrors);updateCatalog();}
+ }).catch(console.error);
+ var controller=new AbortController();
+ var timeout=setTimeout(function(){controller.abort();},15000);
+ var refreshOwn=fetch(ownEndpoint+'?action=publicCatalog',{signal:controller.signal}).then(function(response){
+  if(!response.ok)throw Error('Productos propios no disponibles');
+  return response.json();
+ }).then(async function(data){
+  if(!data.ok||data.catalogSchemaVersion!==2||!Array.isArray(data.products))throw Error('Catálogo propio inválido');
+  await ownSnapshot;
+  own=ownProducts(data.products,mirrors);ownLive=true;updateCatalog();
+ }).catch(function(){}).finally(function(){clearTimeout(timeout);});
+ var supplierSnapshot=fetchStatic().then(function(rows){
+  supplier=prepare(rows);updateCatalog();
+  $('syncStatus').textContent='Catálogo Gamer Comayagua';
+ }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});
+ var refreshSupplier=Promise.all([supplierLive,supplierSnapshot]).then(function(results){
+  if(results[0]?.length){supplier=prepare(results[0]);updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
+ });
+ await Promise.all([ownSnapshot,supplierSnapshot]);
  catalogReady=true;
+ await Promise.all([refreshOwn,refreshSupplier]);
 }
 function openCatalog(source,product){
  if(!window.GC_EXPORT)return;
@@ -322,7 +367,7 @@ function openCatalog(source,product){
  var selected=source==='product'?[product]:source==='selected'?all.filter(function(p){return selectedCatalog.has(p.id);}):null;
  window.GC_EXPORT.open({
   source:source,selected:selected,getSelected:function(){if(source==='product')return [all.find(function(p){return p.id===product.id;})||product];return all.filter(function(p){return selectedCatalog.has(p.id);});},categories:choices,category:category,query:query,
-  results:function(){return listed;},byCategory:function(name){return all.filter(function(p){return p.category===name;});},
+  results:function(){return listed;},byCategory:function(name){return all.filter(function(p){return p.category===name&&(!onlyOwn||p.own);});},
   logo:logoUrl(), getWatermark:function(){return store.watermark;}, phone:PHONE, money:money, stockText:stockText,
   canExport:function(){return catalogReady;},
   show:function(root){open(root,'catalogue');},close:close
@@ -331,6 +376,7 @@ function openCatalog(source,product){
 $('gcSelectCatalog').onclick=function(){selectingCatalog=!selectingCatalog;render();};
 $('gcCreateCatalog').onclick=function(){openCatalog('selected');};
 $('gcCategoryCatalog').onclick=function(){openCatalog('category');};
+$('ownOnly').onclick=function(){onlyOwn=!onlyOwn;this.setAttribute('aria-pressed',String(onlyOwn));filter();};
 $('promotionsOnly').onclick=function(){onlyPromos=!onlyPromos;this.setAttribute('aria-pressed',String(onlyPromos));filter();};
 $('search').addEventListener('input',filter);$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
 $('cartFloat').onclick=cartView;$('cartTop').onclick=cartView;$('closeDialog').onclick=close;$('dialog').onclick=function(event){if(event.target===$('dialog'))close();};document.addEventListener('keydown',function(event){if(event.key==='Escape')close();});
