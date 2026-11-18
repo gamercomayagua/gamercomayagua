@@ -186,3 +186,9 @@
 .gc-bank-content dl div+div{border-top:1px solid #e6ebf2}
 .gc-bank-content dd{margin:0;font-weight:800;overflow-wrap:anywhere;text-align:right;user-select:all}
 .gc-bank-copy{margin-top:8px;min-height:44px}
+
+.gc-promo-badge{display:inline-block;align-self:flex-start;background:#ad1f35;color:#fff;font-weight:850;font-size:.76rem;border-radius:6px;padding:4px 8px;margin:0 0 6px}
+.gc-promo-yellow{background:#ffdf75;color:#553500}
+.gc-results-options{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+#promotionsOnly{background:#fff;color:#9e1b33;border:1px solid #e6c4cb;border-radius:7px;padding:7px 10px;min-height:36px;font-weight:750;cursor:pointer}
+#promotionsOnly[aria-pressed=true]{background:#ad1f35;color:white;border-color:#ad1f35}
