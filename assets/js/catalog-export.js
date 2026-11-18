@@ -150,6 +150,29 @@ function makePdf(pages){
  push('trailer\n<< /Size '+offsets.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
  return new Blob(chunks,{type:'application/pdf'});
 }
+function printOriginal(options,pages,start,end){
+ const win=window.open('','_blank');
+ if(!win)return false;
+ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+ const logo=options.logo?new URL(options.logo,location.href).href:'';
+ const marks=options.watermark&&window.GC_MARKS?window.GC_MARKS.markup(options.watermark,logo):'';
+ const styles=window.GC_MARKS?.styles||'';
+ const body=pages.slice(start,end).map((items,i)=>{
+  const columns=items.length===1?1:items.length<=6?2:3;
+  return '<article><header>'+(logo?'<img src="'+escape(logo)+'" alt="">':'')+'<div><strong>GAMER COMAYAGUA</strong><small>WhatsApp +'+escape(options.phone)+'</small></div></header>'+
+   '<h1>'+escape(options.title)+'</h1><div class="grid" style="--columns:'+columns+'">'+items.map(product=>
+    '<section><div class="photo">'+(product.photo?'<img class="product-photo'+(product.soldOut?' sold':'')+'" src="'+escape(product.photo)+'" alt="">'+marks:'<span>Foto por consultar</span>')+
+    '</div><strong>'+escape(product.name)+'</strong>'+
+    ((options.prices||product.soldOut)?'<b>'+escape(product.soldOut?'AGOTADO':options.money(product.price))+'</b>':'')+
+    '<small>Ref. '+escape(product.id)+' · '+escape(options.stockText(product))+'</small></section>'
+   ).join('')+'</div><footer>Precios y disponibilidad sujetos a confirmación <span>'+String(start+i+1)+' / '+pages.length+'</span></footer></article>';
+ }).join('');
+ win.document.open();
+ win.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escape(options.title)+' | Gamer Comayagua</title><style>'+styles+
+  '*{box-sizing:border-box}body{margin:0;background:#edf2f8;font:14px system-ui,sans-serif;color:#172844}.tools{text-align:center;padding:12px}.tools button{font:inherit;font-weight:800;background:#a91b36;color:white;padding:11px 16px;border:0;border-radius:8px}article{margin:0 auto 18px;padding:22px;background:white;border-top:4px solid #a91b36;width:min(97%,850px);break-after:page}article:last-child{break-after:auto}header{display:flex;align-items:center;gap:10px}header img{width:46px;height:46px;object-fit:contain}header strong{font-size:19px}small{display:block;color:#52647c}.grid{display:grid;grid-template-columns:repeat(var(--columns),minmax(0,1fr));gap:9px}section{padding:8px;min-width:0;border:1px solid #e0e7f0;border-radius:8px;break-inside:avoid}section strong,section b{display:block;margin-top:4px}section b{color:#a91b36;font-size:17px}.photo{position:relative;display:grid;place-items:center;overflow:hidden;background:#f4f7fa;aspect-ratio:1}.photo>.product-photo{width:100%;height:100%;object-fit:contain}.photo .sold{filter:grayscale(1)}h1{font-size:21px;margin:10px 0}footer{font-size:10px;margin-top:12px;color:#52647c}footer span{float:right}@page{size:letter;margin:10mm}@media print{body{background:white}.tools{display:none}article{width:auto;margin:0;padding:0}.photo{max-height:52mm}.grid:has(section:only-child) .photo{max-height:145mm}article,section{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media screen and (max-width:550px){article{padding:10px}section{font-size:12px}section b{font-size:14px}}</style></head><body><div class="tools"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>'+body+'</body></html>');
+ win.document.close();
+ return true;
+}
 function open(options){
  const root=document.createElement('div');root.className='gc-export';
  root.innerHTML=`<h2></h2><div class="gc-export-grid">
@@ -163,12 +186,14 @@ function open(options){
  <div class="gc-export-buttons">
  <a id="gcExportPng" class="btn red" hidden>Descargar PNG</a>
  <button id="gcExportPdf" class="btn outline" type="button" disabled>Preparar PDF</button>
+ <button id="gcExportOriginal" class="btn outline" type="button" hidden>Imprimir con fotos originales</button>
  <a id="gcExportPdfLink" class="btn red" hidden>Descargar PDF</a>
  <button id="gcExportShare" class="btn outline" type="button" hidden>Compartir archivo</button>
  <a id="gcExportView" class="btn outline" target="_blank" rel="noopener" hidden>Abrir PNG</a>
  </div></div><div class="gc-export-stage" id="gcExportStage"><img id="gcExportPreview" alt="Vista previa del catálogo" hidden></div></div>`;
  const $=id=>root.querySelector('#gcExport'+id);
  const source=$('Source'),page=$('Page'),title=$('Title'),stage=$('Preview'),status=$('Status');
+ const original=$('Original');
  const png=$('Png'),pdf=$('Pdf'),pdfLink=$('PdfLink'),share=$('Share'),view=$('View');
  const categoryMode=options.source==='category',single=options.source==='product';
  root.querySelector('h2').textContent=single?'Ficha para compartir':categoryMode?'Compartir categoría o búsqueda':'Catálogo de productos seleccionados';
@@ -181,7 +206,7 @@ function open(options){
  let version=0,requestTimer,urls=[],pngFile,pdfFile,plan=[],activeOptions;
  const clearLinks=()=>{
   urls.forEach(url=>URL.revokeObjectURL(url));urls=[];
-  png.hidden=pdfLink.hidden=share.hidden=view.hidden=true;stage.hidden=true;pdf.disabled=true;
+  png.hidden=pdfLink.hidden=share.hidden=view.hidden=original.hidden=true;stage.hidden=true;pdf.disabled=true;
   pngFile=pdfFile=null;
  };
  const titleFor=()=>single?options.selected[0].name:options.source==='selected'?'Productos seleccionados':source.value.startsWith('category:')?source.value.slice(9):options.query||options.category||'Catálogo de productos';
@@ -210,6 +235,7 @@ function open(options){
   if(!plan.length){status.textContent='No hay productos para este catálogo.';return;}
   const index=Number(page.value)||0;
   activeOptions={...options,title:title.value.trim()||titleFor(),prices:$('Prices').checked,watermark:$('Mark').checked?{...options.getWatermark(),enabled:true}:null};
+  original.hidden=false;
   status.textContent='Preparando fotos de la página '+(index+1)+'…';
   try{
    const result=await drawPage(activeOptions,plan[index],index,plan.length);
@@ -222,9 +248,13 @@ function open(options){
    pdf.disabled=false;
    pdf.textContent=plan.length>8?'Preparar PDF · páginas '+(Math.floor(index/8)*8+1)+'–'+Math.min(plan.length,Math.floor(index/8)*8+8):'Preparar PDF';
    setShare(pngFile);
-   status.textContent=items.length+' productos · '+plan.length+' páginas'+(result.missing?' · '+result.missing+' fotos no disponibles en esta página':'');
+   status.textContent=items.length+' productos · '+plan.length+' páginas'+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
   }catch(error){if(ticket===version)status.textContent=error.message;}
  }
+ original.onclick=()=>{
+  const index=Number(page.value)||0,start=Math.floor(index/8)*8,end=Math.min(start+8,plan.length);
+  if(!printOriginal(activeOptions,plan,start,end))status.textContent='Permití ventanas emergentes para abrir la versión para imprimir.';
+ };
  pdf.onclick=async()=>{
   const ticket=version,index=Number(page.value)||0,start=Math.floor(index/8)*8,end=Math.min(start+8,plan.length),pages=[];
   pdf.disabled=true;pdfLink.hidden=true;
