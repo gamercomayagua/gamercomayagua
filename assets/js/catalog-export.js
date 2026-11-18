@@ -105,7 +105,12 @@ async function drawPage(options,items,index,total){
  const [brand,marks,photos]=await Promise.all([
   loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo)))
  ]);
- const width=1200,height=items.length===1?1450:1500;
+ const width=1200,gap=17,inset=13;
+ const cols=items.length===1?1:items.length===3||items.length>6?3:2;
+ const rows=Math.ceil(items.length/cols);
+ const cardW=(width-88-(cols-1)*gap)/cols,photoH=cardW-inset*2;
+ const cardH=photoH+(cols===1?172:135);
+ const height=Math.ceil(282+rows*cardH+(rows-1)*gap);
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const ctx=canvas.getContext('2d',{alpha:false});
  ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#a91b36';ctx.fillRect(0,0,width,12);
@@ -113,11 +118,8 @@ async function drawPage(options,items,index,total){
  ctx.fillStyle='#101e39';ctx.font='800 42px system-ui';ctx.fillText('GAMER COMAYAGUA',brand?157:44,80,980);
  ctx.fillStyle='#52647c';ctx.font='25px system-ui';ctx.fillText('WhatsApp  +'+phone.slice(0,3)+' '+phone.slice(3),brand?157:44,119);
  ctx.fillStyle='#152640';ctx.font='800 38px system-ui';ctx.fillText(title,44,181,1100);
- const cols=items.length===1?1:items.length<=6?2:3;
- const rows=Math.ceil(items.length/cols),gap=17,cardW=(width-88-(cols-1)*gap)/cols,cardH=(height-282-(rows-1)*gap)/rows;
  items.forEach((product,i)=>{
   const x=44+(i%cols)*(cardW+gap),y=214+Math.floor(i/cols)*(cardH+gap);
-  const photoH=cardH-(rows<=2?150:127), inset=13;
   ctx.fillStyle='#f9fafc';ctx.fillRect(x,y,cardW,cardH);
   ctx.strokeStyle='#dee5ee';ctx.lineWidth=2;ctx.strokeRect(x,y,cardW,cardH);
   ctx.fillStyle='#eef2f7';ctx.fillRect(x+inset,y+inset,cardW-inset*2,photoH);
@@ -168,7 +170,7 @@ function printOriginal(options,pages,start,end){
  const marks=options.watermark&&window.GC_MARKS?window.GC_MARKS.markup(options.watermark,logo):'';
  const styles=window.GC_MARKS?.styles||'';
  const body=pages.slice(start,end).map((items,i)=>{
-  const columns=items.length===1?1:items.length<=6?2:3;
+  const columns=items.length===1?1:items.length===3||items.length>6?3:2;
   return '<article><header>'+(logo?'<img src="'+escape(logo)+'" alt="">':'')+'<div><strong>GAMER COMAYAGUA</strong><small>WhatsApp +'+escape(options.phone)+'</small></div></header>'+
    '<h1>'+escape(options.title)+'</h1><div class="grid" style="--columns:'+columns+'">'+items.map(product=>
     '<section><div class="photo">'+(product.photo?'<img class="product-photo'+(product.soldOut?' sold':'')+'" src="'+escape(product.photo)+'" alt="">'+marks:'<span>Foto por consultar</span>')+
@@ -219,7 +221,7 @@ function open(options){
   png.hidden=pdfLink.hidden=share.hidden=view.hidden=original.hidden=true;stage.hidden=true;pdf.disabled=true;
   pngFile=pdfFile=null;
  };
- const titleFor=()=>single?options.selected[0].name:options.source==='selected'?'Productos seleccionados':source.value.startsWith('category:')?source.value.slice(9):options.query||options.category||'Catálogo de productos';
+ const titleFor=()=>single?options.selected[0].name:options.source==='selected'?(options.query?'Selección · '+options.query:'Productos seleccionados'):source.value.startsWith('category:')?source.value.slice(9):options.query||options.category||'Catálogo de productos';
  const sourceProducts=()=>categoryMode?(source.value.startsWith('category:')?options.byCategory(source.value.slice(9)):options.results()):options.getSelected?options.getSelected():options.selected;
  function filename(suffix){return 'Gamer-Comayagua-'+clean(title.value)+suffix;}
  function link(control,data,name){
@@ -258,7 +260,7 @@ function open(options){
    pdf.disabled=false;
    pdf.textContent=plan.length>8?'Preparar PDF · páginas '+(Math.floor(index/8)*8+1)+'–'+Math.min(plan.length,Math.floor(index/8)*8+8):'Preparar PDF';
    setShare(pngFile);
-   status.textContent=items.length+' productos · '+plan.length+' páginas'+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
+   status.textContent=items.length+(items.length===1?' producto':' productos')+' · '+plan.length+(plan.length===1?' página':' páginas')+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
   }catch(error){if(ticket===version)status.textContent=error.message;}
  }
  original.onclick=()=>{
