@@ -325,7 +325,6 @@ function openCatalog(source,product){
   results:function(){return listed;},byCategory:function(name){return all.filter(function(p){return p.category===name;});},
   logo:logoUrl(), getWatermark:function(){return store.watermark;}, phone:PHONE, money:money, stockText:stockText,
   canExport:function(){return catalogReady;},
-  photo:async function(url){var endpoint=catalogUrl();if(!endpoint)return '';var data=await jsonp(endpoint,{photo:url});return data.ok?data.data:'';},
   show:function(root){open(root,'catalogue');},close:close
  });
 }

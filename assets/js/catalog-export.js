@@ -13,11 +13,21 @@ function loadImage(src){
   img.onload=()=>finish(img);img.onerror=()=>finish(null);img.src=src;
  });
 }
-async function productImage(src,proxy){
+function exportPhotoUrl(src){
+ try{
+  const url=new URL(src,location.href);
+  if(url.origin==='https://phone-depot-cdn.ingeniacode.com'&&url.pathname.startsWith('/images/phonedepot/')){
+   return 'https://wsrv.nl/?'+new URLSearchParams({url:url.href,w:'1200',h:'1200',fit:'inside',output:'webp'});
+  }
+ }catch(error){}
+ return '';
+}
+async function productImage(src){
  if(!src)return null;
  if(!imageCache.has(src)){
   if(imageCache.size>=18)imageCache.delete(imageCache.keys().next().value);
-  const work=(async()=>await loadImage(src)||await loadImage(await proxy(src)))().catch(()=>null);
+  const optimized=exportPhotoUrl(src);
+  const work=(async()=>await loadImage(optimized)||await loadImage(src))().catch(()=>null);
   imageCache.set(src,work);
  }
  const result=await imageCache.get(src);
@@ -56,7 +66,7 @@ async function markAssets(settings,logo){
  template.innerHTML=window.GC_MARKS.markup(settings,logo);
  const root=template.content.firstElementChild;
  if(!root)return null;
- const image=await loadImage(root.querySelector('img')?.src);
+ const image=await productImage(root.querySelector('img')?.src);
  return {root,image};
 }
 function markPhoto(ctx,marks,area){
@@ -93,7 +103,7 @@ function pagePlan(items,size){
 async function drawPage(options,items,index,total){
  const {title,prices,logo,watermark,phone,money,stockText}=options;
  const [brand,marks,photos]=await Promise.all([
-  loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo,options.photo)))
+  loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo)))
  ]);
  const width=1200,height=items.length===1?1450:1500;
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
