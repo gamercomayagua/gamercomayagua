@@ -136,3 +136,39 @@
 .photo .gc-watermark img,.gc-detail-image .gc-watermark img{width:var(--gc-mark-size);height:auto;padding:0;object-fit:contain}
 .gc-watermark span{font-size:calc(var(--gc-mark-size) * .85)}
 .gc-sold-badge,.gc-free-badge,.photo .tag{z-index:2}
+
+/* Cotización en la tienda */
+.dialogbox:has(.gc-checkout){width:min(100%,960px);max-width:960px;background:#f5f6f8;padding:0}
+.dialogbox:has(.gc-checkout) .close{position:absolute;z-index:2;background:#fff;min-width:42px;min-height:42px}
+.gc-checkout{padding:0}
+.gc-cart-head{display:flex;align-items:center;gap:12px;background:#fff;border-bottom:1px solid #e1e5ec;padding:16px 62px 16px 22px}
+.gc-cart-head img{width:42px;height:42px;object-fit:contain}
+.gc-checkout .gc-cart-head h2{font-size:clamp(21px,4vw,29px);letter-spacing:-.035em}
+.gc-cart-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;padding:16px}
+.gc-cart-layout .gc-section{background:#fff;border:1px solid #e0e4eb;border-radius:12px;padding:14px;margin:0 0 12px}
+.gc-cart-layout .gc-section h3{font-size:16px;margin-bottom:10px}
+.gc-cart-summary .gc-section{padding:16px}
+.gc-quote-item{display:flex;align-items:center;gap:9px;min-width:0}
+.gc-quote-item img{width:42px;height:42px;object-fit:contain;border-radius:6px;background:#f5f6f8;flex:none}
+.gc-quote-item strong{overflow-wrap:anywhere}
+.gc-checkout .gc-item{border-radius:8px;padding:8px;margin-bottom:7px}
+.gc-checkout .qty button{min-width:36px;min-height:36px}
+.gc-checkout .gc-selected{margin:10px 0;border-radius:9px;background:#fae9ec;color:#8f1a2b}
+.gc-checkout .gc-selected p{color:#60454d}
+.gc-checkout .gc-pay-choices{grid-template-columns:1fr;margin:0 0 10px}
+.gc-checkout .gc-pay-choices label{text-align:left;min-height:42px;cursor:pointer}
+.gc-cart-compare{margin-top:10px;font-size:13px;color:#39475f}
+.gc-cart-compare summary{cursor:pointer;font-weight:700;padding:5px 0}
+.gc-cart-summary .gc-cart-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.gc-cart-summary .gc-cart-actions button{min-height:44px;line-height:1.2}
+.gc-cart-summary .gc-cart-actions .red{grid-column:1/-1}
+.gc-cart-summary #gcClear{background:transparent}
+.gc-cart-summary .hint{padding:0 2px}
+@media(max-width:680px){
+ .gc-cart-head{padding:13px 55px 13px 12px}
+ .gc-cart-layout{grid-template-columns:1fr;gap:0;padding:10px}
+ .gc-cart-layout .gc-section{padding:11px}
+ .gc-checkout .gc-item{padding:7px}.gc-quote-item img{width:36px;height:36px}
+ .gc-cart-summary .gc-cart-actions .btn{font-size:.8rem}
+ .gc-checkout .gc-ship-choices label{min-height:44px}
+}
