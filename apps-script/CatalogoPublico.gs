@@ -4,7 +4,7 @@
  * Hoja privada: pestaña Catalogo. Lee columnas:
  * A ID, B Producto, C Precio proveedor, F Código, G Categoría,
  * H Subcategoría, I Descripción, K Foto, T Precio manual,
- * U Precio web final, V Envío gratis y W Estado.
+ * U Precio web final, V Envío gratis, W Estado, X Cantidad, Y Verificación.
  *
  * JAMÁS devuelve: precio del proveedor (C), precio mayorista (E),
  * SKU completo (D), ni otras columnas internas.
@@ -32,7 +32,7 @@ function doGet(e){
     var offset=Math.max(0,Math.min(20000,Math.floor(Number(p.offset)||0)));
     var limit=Math.max(1,Math.min(400,Math.floor(Number(p.limit)||400)));
     var length=Math.max(0,Math.min(limit,total-offset));
-    var rows=length?sheet.getRange(offset+2,1,length,23).getValues():[];
+    var rows=length?sheet.getRange(offset+2,1,length,25).getValues():[];
     var clean=function(v,max){return String(v==null?'':v).trim().replace(/^["“]+|["”]+$/g,'').slice(0,max||800);};
     var positive=function(v){if(v==null||v==='')return null;var n=Number(v);return isFinite(n)&&n>0?n:null;};
     var records=rows.filter(function(r){return r[0]&&r[1];}).map(function(r){
@@ -50,7 +50,9 @@ function doGet(e){
         description:clean(r[8],1000),
         photo:/^https:\/\//i.test(clean(r[10],900))?clean(r[10],900):'',
         freeShipping:/^si$/i.test(clean(r[21])),
-        soldOut:/^agotado$/i.test(clean(r[22]))
+        soldOut:/^agotado$/i.test(clean(r[22])) || (r[23]!=='' && r[23]!=null && Number.isInteger(Number(r[23])) && Number(r[23])<4),
+        stock:(r[23]!=='' && r[23]!=null && Number.isInteger(Number(r[23])) && Number(r[23])>=0)?Number(r[23]):null,
+        stockVerifiedAt:r[24] instanceof Date?Utilities.formatDate(r[24],Session.getScriptTimeZone(),'yyyy-MM-dd HH:mm'):null
       };
     });
     result={ok:true,total:total,offset:offset,products:records};

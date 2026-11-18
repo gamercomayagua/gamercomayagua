@@ -119,3 +119,12 @@
 .gc-local-cost{font-weight:850;background:#eaf6ef;color:#077149;padding:11px;border-radius:9px;margin:3px 0 0;font-size:.84rem}
 .gc-local-smallprint{font-size:.72rem;line-height:1.45;color:#6c7e9a;margin:2px 0 0}
 @media(max-width:650px){.gc-local-chooser{padding:11px}.gc-local-smallprint{font-size:.69rem}}
+
+.gc-stock-line{margin:7px 0 1px;font-size:.76rem;font-weight:700;color:#78869c;line-height:1.35}
+.gc-stock-line.is-in{color:#0a8060}
+.gc-stock-line.is-out{color:#9b3840;font-weight:900}
+.gc-soldout .gc-stock-line.is-out{color:#616c7b}
+.gc-soldout .gc-product-title,.gc-soldout .gc-product-price{color:#858c9a}
+.gc-soldout .photo{filter:grayscale(1)}
+.gc-soldout .gc-product-action .btn{background:#aeb4be}
+.gc-detail-info .gc-stock-line{font-size:.85rem;margin:7px 0}
