@@ -54,3 +54,6 @@
 .gc-cart-actions .btn.red{flex:2 1 260px}
 .gc-checkout .hint{margin-top:12px}
 @media(max-width:650px){.gc-ship-choices{grid-template-columns:1fr}.gc-ship-choices label{padding:11px;font-size:.83rem}.gc-ship-choices small{font-size:.73rem}.gc-customer-grid{grid-template-columns:1fr}.gc-customer-grid .gc-full{grid-column:auto}.gc-pay-choices{grid-template-columns:1fr;gap:6px}.gc-pay-choices label{text-align:left}.gc-selected strong{font-size:1.28rem}.gc-payrow b{font-size:.91rem}.gc-item{gap:5px}.gc-cart-actions button{flex:1 1 100%}}
+
+.gc-soldout-detail .detailphoto img{filter:grayscale(1);opacity:.35}
+.gc-soldout-detail .detailphoto{background:#f0f1f4}
