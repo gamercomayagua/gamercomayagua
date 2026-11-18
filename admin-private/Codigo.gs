@@ -119,12 +119,14 @@ function gcRefreshSupplierStock(id){
  const found=ctx.tab.getRange(2,1,Math.max(1,ctx.tab.getLastRow()-1),1).createTextFinder(safe).matchEntireCell(true).findNext();
  if(!found)throw new Error('Producto no encontrado');
  const row=found.getRow();
- const url='https://www.phonedepothn.com/shop/product-details/'+encodeURIComponent(safe);
+ const url='https://www.phonedepothn.com/shop/product-details/'+encodeURIComponent(safe)+'?pd='+encodeURIComponent(safe);
  const resp=UrlFetchApp.fetch(url,{muteHttpExceptions:true,followRedirects:true});
  if(resp.getResponseCode()!==200)throw new Error('Proveedor respondió '+resp.getResponseCode()+'. No cambié el stock.');
  const body=resp.getContentText();
  const text=body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/\s+/g,' ');
- let match=text.match(/\bDisponible\s*:\s*(\d{1,7})\b/i);
+ const visibleCounts=[...text.matchAll(/\bDisponible\s*:\s*(\d{1,7})\b/gi)];
+ if(visibleCounts.length>1)throw new Error('Hay varias cantidades visibles: es necesario identificar la variación exacta antes de actualizar el stock.');
+ let match=visibleCounts.length===1?visibleCounts[0]:null;
  if(!match)match=body.match(/["'](?:available_quantity|stock_quantity|availableStock)["']\s*:\s*["']?(\d{1,7})["']?/i);
  if(!match)throw new Error('No se detectó un contador legible. La web puede cargar stock con JavaScript. No modifiqué existencias.');
  const count=Number(match[1]);
@@ -132,7 +134,7 @@ function gcRefreshSupplierStock(id){
  try{
  const next=gcSheet_();if(next.tab.getRange(row,1).getDisplayValue().trim()!==safe)throw new Error('La fila cambió, vuelve a buscar');
  next.tab.getRange(row,24,1,2).setValues([[count,new Date()]]);
- if(count<4)next.tab.getRange(row,23).setValue('AGOTADO');
+ // La columna W conserva el bloqueo MANUAL del dueño; el cliente usa también X<4.
  SpreadsheetApp.flush();
  }finally{lock.releaseLock();}
  return {ok:true,stock:count,available:count>=4};
