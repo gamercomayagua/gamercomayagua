@@ -4,6 +4,7 @@
 var $=function(id){return document.getElementById(id);};
 var PHONE='50431517755';
 var CONFIG={shipping:110,tigo:0.10,cod:0.15,codMin:350};
+var catalogReady=false;
 var store={cod:true},all=[],listed=[],offset=24,cart=Object.create(null),shippingMode='national',localZone='',payMode='transfer',currentDialog='';
 var money=function(n){return n===null||n===undefined?'Consultar precio':'L '+Number(n).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2});};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
@@ -222,8 +223,9 @@ root.querySelectorAll('input[name=gcPayment]').forEach(function(input){input.che
 if(window.GC_HONDURAS)window.GC_HONDURAS.bind(root.querySelector('#customerDepartment'),root.querySelector('#customerMunicipality'));
 else {root.querySelector('#customerDepartment').outerHTML='<input id="customerDepartment" placeholder="Departamento">';root.querySelector('#customerMunicipality').outerHTML='<input id="customerMunicipality" placeholder="Municipio">';}
 root.querySelector('#gcClear').onclick=function(){cart=Object.create(null);saveCart();itemRender();totalsRender();};
-root.querySelector('#gcWhatsapp').onclick=function(){var items=cartItems();if(!items.length){toast('Primero agregá productos al carrito');return;}var q=totalsRender();if(shippingMode==='local'&&!q.zone){toast('Elegí la colonia o destino para calcular el envío');localSelect.focus();return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
+root.querySelector('#gcWhatsapp').onclick=function(){if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var items=cartItems();if(!items.length){toast('Primero agregá productos al carrito');return;}var q=totalsRender();if(shippingMode==='local'&&!q.zone){toast('Elegí la colonia o destino para calcular el envío');localSelect.focus();return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
 function openQuote(comparative){
+ if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}
  var items=cartItems();
  if(!items.length){toast('Primero agregá productos');return;}
  var q=totalsRender();
@@ -252,7 +254,7 @@ var rows=initial.products.slice();
 for(var pos=400;pos<total;pos+=400){var part=await jsonp(url,{offset:String(pos),limit:'400'});if(!part.ok||!Array.isArray(part.products))throw Error('Página incompleta');rows.push.apply(rows,part.products);}
 return {rows:rows,store:initial.store};}
 async function init(){applyLogo();try{all=prepare(await fetchStatic());selectCategory();filter();$('syncStatus').textContent='Catálogo Gamer Comayagua · '+all.length.toLocaleString('es-HN')+' artículos';}catch(e){console.error(e);$('resultCount').textContent='Catálogo no disponible';$('products').innerHTML='<div class="empty" style="grid-column:1/-1">No fue posible cargar los productos.</div>';}
-var url=String(window.GC_LIVE_ENDPOINT||'').trim();if(url)try{var live=await fetchLive(url),recent=prepare(live.rows);if(recent.length){store=live.store||store;applyLogo();all=recent;selectCategory();filter();if(currentDialog==='cart')cartView(true);$('syncStatus').textContent='✓ Precios sincronizados con Google Sheets';}}catch(e){console.warn('Conexión en vivo no disponible; usando respaldo.',e);$('syncStatus').textContent='Copia pública · confirmá el precio al pedir';}}
+var url=String(window.GC_LIVE_ENDPOINT||'').trim();if(url)try{var live=await fetchLive(url),recent=prepare(live.rows);if(recent.length){store=live.store||store;applyLogo();all=recent;selectCategory();filter();if(currentDialog==='cart')cartView(true);$('syncStatus').textContent='✓ Precios sincronizados con Google Sheets';}}catch(e){console.warn('Conexión en vivo no disponible; usando respaldo.',e);$('syncStatus').textContent='Copia pública · confirmá el precio al pedir';}finally{catalogReady=true;}else catalogReady=true;}
 $('search').addEventListener('input',filter);$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
 $('cartFloat').onclick=cartView;$('cartTop').onclick=cartView;$('closeDialog').onclick=close;$('dialog').onclick=function(event){if(event.target===$('dialog'))close();};document.addEventListener('keydown',function(event){if(event.key==='Escape')close();});
 readCart();renderCounts();init();
