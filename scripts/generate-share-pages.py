@@ -9,7 +9,6 @@ from urllib.parse import urlencode, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = "https://gamercomayagua.github.io/gamercomayagua/"
-OLD_SITE = "https://sdcomayagua.github.io/sdcomayagua/"
 DEFAULT_IMAGE = urljoin(SITE, "assets/logo-compartir.png")
 BRAND = "Gamer Comayagua"
 
@@ -31,6 +30,13 @@ def image_url(value):
     return value if address.scheme == "https" and address.netloc else ""
 
 
+def preview_image(photo):
+    if urlsplit(photo).hostname != "phone-depot-cdn.ingeniacode.com":
+        return photo or DEFAULT_IMAGE
+    params = {"url": photo, "w": 400, "h": 400, "fit": "contain", "cbg": "white", "output": "jpg", "q": 78}
+    return "https://wsrv.nl/?" + urlencode(params)
+
+
 def slug(text):
     chars = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", chars.lower()).strip("-")[:70].rstrip("-")
@@ -41,7 +47,7 @@ def compact_title(value):
 
 
 def landing(path, title, description, image, destination):
-    image = image or DEFAULT_IMAGE
+    image = preview_image(image)
     escape = lambda value: html.escape(value, quote=True)
     write(path, f"""<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
@@ -74,12 +80,9 @@ def products():
         product_id = str(product.get("id", ""))
         if product.get("active") is not True or not product.get("name") or not re.fullmatch(r"[A-Za-z0-9_-]{1,43}", product_id):
             continue
-        source = product.get("image")
-        mirror = own.get("mirrors", {}).get(product_id, {})
-        image = mirror.get("path") if mirror.get("source") == source else source
-        if isinstance(image, str) and re.fullmatch(r"assets/(?:catalog|products)/[\w.-]+\.(?:webp|jpe?g|png)", image, re.I):
-            image = urljoin(OLD_SITE, image)
-        rows["propio-" + product_id] = (product["name"], product.get("category", ""), image_url(image))
+        thumbnail = f"assets/vistas-previas/{product_id}.jpg"
+        photo = urljoin(SITE, thumbnail) if (ROOT / thumbnail).is_file() else image_url(product.get("image"))
+        rows["propio-" + product_id] = (product["name"], product.get("category", ""), photo)
     return rows
 
 
