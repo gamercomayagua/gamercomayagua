@@ -61,16 +61,22 @@ var comboDetail=null,comboDetailTrigger=null;
 function activeCombos(){
  return combos.filter(function(combo){return combo.group===comboGroup.value;});
 }
+var comboReference=prepare(window.GC_COMBO_REFERENCE||[]);
+function comboCatalog(){
+ var byId=new Map(all.map(function(p){return [p.id,p];}));
+ if(comboPrices!=='ready')comboReference.forEach(function(p){byId.set(p.id,p);});
+ return byId;
+}
 function comboSummary(items){
  var blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
  var pending=items.some(function(item){return item.p?.stock===null;});
- var priced=comboPrices==='ready'&&items.every(function(item){return item.p&&item.p.price!==null;});
+ var priced=items.every(function(item){return item.p&&item.p.price!==null;});
  var total=priced?items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100:null;
  var status=comboPrices==='loading'?'Actualizando precios':comboPrices==='unavailable'?'Precios por confirmar':blocked?'Combo no disponible':pending?'Existencias por confirmar':'Disponible';
- return {blocked:blocked,priced:priced,total:total,status:status,tone:blocked?'is-out':pending?'':'is-in'};
+ return {blocked:blocked,priced:priced,total:total,status:status,tone:blocked?'is-out':pending?'':'is-in',reference:comboPrices!=='ready'};
 }
 function comboTotal(summary){
- return '<div class="gc-combo-total"><div><small>Total del combo</small><strong>'+money(summary.total)+'</strong></div>'+
+ return '<div class="gc-combo-total"><div><small>'+(summary.reference?'Precio de referencia':'Total del combo')+'</small><strong>'+money(summary.total)+'</strong></div>'+
   '<span class="gc-combo-stock '+summary.tone+'">'+summary.status+'</span></div>';
 }
 function comboLinePrice(item,summary){
@@ -83,13 +89,16 @@ function comboThumbnail(item){
  // Vista reducida dentro de un botón, con elementos de texto válidos en el botón.
  return item.p?.photo?photoMarkup(item.p).replace(/<(\/?)div\b/g,'<$1span'):'<span>Sin foto</span>';
 }
+function comboNote(combo){
+ return combo.note?'<p class="gc-combo-note">'+esc(combo.note)+'</p>':'';
+}
 function comboImageFallback(root){
  root.querySelectorAll('.gc-product-image').forEach(function(img){
   img.onerror=function(){img.parentElement.textContent='Sin foto';};
  });
 }
 function renderCombos(){
- var grid=$('comboGrid'),byId=new Map(all.map(function(p){return [p.id,p];}));
+ var grid=$('comboGrid'),byId=comboCatalog();
  var groupCombos=activeCombos(),pageCount=Math.ceil(groupCombos.length/combosPerPage);
  var start=comboPage*combosPerPage;
  $('comboPager').hidden=pageCount<=1;
@@ -101,9 +110,9 @@ function renderCombos(){
   var card=document.createElement('article');card.className='gc-combo-card';
   card.innerHTML='<button class="gc-combo-photos" type="button" aria-label="Ver combo '+esc(combo.name)+'" data-combo-position="'+(start+index)+'">'+items.slice(0,3).map(function(item){
    return '<span class="gc-combo-photo" aria-hidden="true">'+comboThumbnail(item)+'</span>';
-  }).join('')+'<span class="gc-combo-view-label">Ver combo</span></button><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
+  }).join('')+'<span class="gc-combo-view-label">Ver combo'+(items.length>3?' · '+items.length+' artículos':'')+'</span></button><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
    items.map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+comboLinePrice(item,summary)+'</li>';}).join('')+
-   '</ul>'+comboTotal(summary)+comboAddButton(summary)+'</div>';
+   '</ul>'+comboNote(combo)+comboTotal(summary)+comboAddButton(summary)+'</div>';
   comboImageFallback(card);
   card.querySelector('.gc-combo-photos').onclick=function(){
    comboDetailTrigger=start+index;
@@ -119,7 +128,8 @@ function renderCombos(){
 }
 function renderComboDetail(initial){
  var state=comboDetail,combo=state.list[state.index];
- var items=comboItems(combo,new Map(all.map(function(p){return [p.id,p];}))),summary=comboSummary(items);
+ var items=comboItems(combo,comboCatalog()),summary=comboSummary(items);
+ var primary=items[0];
  var box=wrap('<div class="gc-combo-detail"><header><h2 id="comboDetailTitle" tabindex="-1">'+esc(combo.name)+'</h2>'+
   '<nav class="gc-combo-detail-nav" aria-label="Navegar entre combos">'+
   '<button type="button" class="btn outline" data-combo-move="-1"'+(state.index===0?' disabled':'')+'>← Anterior</button>'+
@@ -129,7 +139,9 @@ function renderComboDetail(initial){
   '<div class="gc-combo-detail-summary"><h3>Qué incluye</h3><ul>'+items.map(function(item,i){
    return '<li><button class="gc-combo-item" data-photo-index="'+i+'" type="button"><span class="gc-combo-photo" aria-hidden="true">'+
     comboThumbnail(item)+'</span><span>'+item.qty+' × '+esc(item.label)+comboLinePrice(item,summary)+'</span></button></li>';
-  }).join('')+'</ul>'+comboTotal(summary)+comboAddButton(summary)+'</div></div></div>');
+  }).join('')+'</ul>'+comboNote(combo)+comboTotal(summary)+comboAddButton(summary)+
+  (combo.individualAction?'<button class="btn outline gc-combo-single" type="button"'+
+   (comboPrices!=='ready'||unavailableComboItem(primary)?' disabled':'')+'>'+esc(combo.individualAction)+'</button>':'')+'</div></div></div>');
  var photo=box.querySelector('.gc-combo-photo-large'),caption=box.querySelector('figcaption');
  function selectPhoto(index){
   state.photo=index;
@@ -150,6 +162,8 @@ function renderComboDetail(initial){
   button.onclick=function(){state.index+=+button.dataset.comboMove;state.photo=0;renderComboDetail(true);};
  });
  box.querySelector('.gc-combo-add').onclick=function(){addCombo(combo);};
+ var single=box.querySelector('.gc-combo-single');
+ if(single)single.onclick=function(){add(primary.p);};
  open(box,'combo');
  if(initial){
   $('dialogBody').parentElement.scrollTop=0;
@@ -330,25 +344,13 @@ function printQuote(items,q,comparative){
  win.document.open();win.document.write(full);win.document.close();
 }
 function showBankAccounts(root){
- var accounts=[
-  ['BAC Honduras','755925871'],['Banco Atlántida','2020666940'],['Banco Azteca','75080117613318'],
-  ['Banco de Occidente','217020233253'],['Banco Ficohsa','200021495637'],['Banpaís','213450118392'],
-  ['Banrural','500840002420'],['Kash','#gabrielguerrerohn'],['Tigo Money','9474-6828']
- ];
- var holder='RENEE GABRIEL GUERRERO COELLO',identity='0301199303922';
  var panel=document.createElement('dialog');panel.className='gc-bank-panel';
  panel.setAttribute('aria-labelledby','gcBankHeading');
- panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos bancarios</h2><p>Gamer Comayagua · Información oficial de pago</p></div><button class="btn outline" type="button" aria-label="Cerrar datos bancarios">✕</button></header>'+
-  '<div class="gc-bank-content"><p><strong>Titular</strong><br>'+holder+'<br>DNI / Identidad: '+identity+'</p><dl>'+
-  accounts.map(function(account){return '<div><dt>'+account[0]+'</dt><dd>'+account[1]+'</dd></div>';}).join('')+
-  '</dl><p>Confirmá la cuenta y el monto antes de depositar.</p><button type="button" class="btn gc-bank-copy">Copiar datos bancarios</button><p class="gc-bank-status" role="status"></p></div>';
+ panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos de transferencia</h2><p>Gamer Comayagua</p></div>'+
+  '<button class="btn outline" type="button" aria-label="Cerrar datos de transferencia">✕</button></header>'+
+  '<div class="gc-bank-content"><p>Solicitá la cuenta de pago por WhatsApp y confirmá el monto de tu pedido.</p>'+
+  '<a class="btn gc-bank-copy" href="https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola, ¿me comparten los datos para pagar por transferencia?')+'" target="_blank" rel="noopener">Solicitar datos por WhatsApp</a></div>';
  panel.querySelector('header button').onclick=function(){panel.close();};
- panel.querySelector('.gc-bank-copy').onclick=async function(){
-  var lines=['GAMER COMAYAGUA','DATOS BANCARIOS','Titular: '+holder,'DNI / Identidad: '+identity].concat(accounts.map(function(account){return account[0]+': '+account[1];}),['Confirmá la cuenta y el monto antes de depositar.']);
-  var status=panel.querySelector('.gc-bank-status');
-  try{await navigator.clipboard.writeText(lines.join('\n'));status.textContent='Datos copiados.';}
-  catch(error){status.textContent='Seleccioná los datos para copiarlos.';}
- };
  panel.addEventListener('close',function(){panel.remove();});
  root.appendChild(panel);panel.showModal();
 }
@@ -367,7 +369,7 @@ function cartView(refresh){var previous=refresh===true?customerData(true):null;c
  <label id="gcDepartmentField">Departamento<select id="customerDepartment"></select></label>
  <label id="gcMunicipalityField">Municipio<select id="customerMunicipality"></select></label>
  <label id="gcAddressField" class="gc-full"><span id="gcAddressLabel">Barrio, colonia o referencia</span><input id="customerAddress" maxlength="160" placeholder="Dirección para la entrega"></label>
-</div></section></div><aside class="gc-cart-summary"><section class="gc-section"><h3>Resumen y forma de pago</h3><div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div><div id="gcSelectedTotal" class="gc-selected" aria-live="polite"></div><div id="gcCompare"></div></section><div class="gc-cart-actions"><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button><button type="button" id="gcPrint" class="btn gc-quote-button">Descargar cotización<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">3 Métodos de Pago<small>Comparar los 3 precios</small></button><button type="button" id="gcBank" class="btn outline">Cuentas de banco</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div><p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p></aside></div></div>`);
+</div></section></div><aside class="gc-cart-summary"><section class="gc-section"><h3>Resumen y forma de pago</h3><div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div><div id="gcSelectedTotal" class="gc-selected" aria-live="polite"></div><div id="gcCompare"></div></section><div class="gc-cart-actions"><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button><button type="button" id="gcPrint" class="btn gc-quote-button">Descargar cotización<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">3 Métodos de Pago<small>Comparar los 3 precios</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div><p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p></aside></div></div>`);
 var itemsBox=root.querySelector('#gcCartItems'),compare=root.querySelector('#gcCompare'),total=root.querySelector('#gcSelectedTotal'),
  localField=root.querySelector('#gcLocalField'),localSearch=root.querySelector('#gcLocalSearch'),localSelect=root.querySelector('#gcLocalZone'),
  localName=root.querySelector('#gcLocalName'),localPlace=root.querySelector('#gcLocalPlace'),localCost=root.querySelector('#gcLocalCost');
@@ -464,12 +466,9 @@ async function fetchLive(url,first){
  if(!initial.ok||!Array.isArray(initial.products))throw Error('Respuesta inválida');
  var total=Number(initial.total);
  if(!Number.isInteger(total)||total<=0||total>20000)throw Error('Total inválido');
- var positions=Array.from({length:Math.ceil((total-1)/400)},function(_,i){return String(i*400+1);});
- var parts=[];
- for(var i=0;i<positions.length;i+=4){
-  var batch=await Promise.all(positions.slice(i,i+4).map(function(offset){return jsonp(url,{offset:offset,limit:'400'});}));
-  parts.push(...batch);
- }
+ var limit=400;
+ var positions=Array.from({length:Math.ceil(total/limit)-1},function(_,i){return String((i+1)*limit);});
+ var parts=await Promise.all(positions.map(function(offset){return jsonp(url,{offset:offset,limit:String(limit)});}));
  if(parts.some(function(part){return !part.ok||!Array.isArray(part.products);}))throw Error('Página incompleta');
  return initial.products.concat(parts.flatMap(function(part){return part.products;}));
 }
@@ -505,7 +504,7 @@ async function init(){
   selectCategory();filter(false);renderCombos();
   if(currentDialog==='cart')cartView(true);
  }
- var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'1'}):null;
+ var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'400'}):null;
  if(first)first.then(function(data){if(data.ok)updateStore(data.store);},function(){});
  var supplierLive=first?fetchLive(url,first).then(function(rows){return rows;},function(){return null;}):Promise.resolve(null);
  var ownSnapshot=fetch('data/productos-propios.json').then(function(response){
@@ -558,5 +557,5 @@ $('promotionsOnly').onclick=function(){onlyPromos=!onlyPromos;this.setAttribute(
 $('search').addEventListener('input',filter);$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
 $('cartFloat').onclick=cartView;$('cartTop').onclick=cartView;$('closeDialog').onclick=close;$('dialog').onclick=function(event){if(event.target===$('dialog'))close();};document.addEventListener('keydown',function(event){if(event.key==='Escape')close();});
 if(window.GC_MARKS)window.GC_MARKS.applyStyles();
-readCart();renderCounts();init();
+readCart();renderCounts();renderCombos();init();
 })();

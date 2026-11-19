@@ -302,3 +302,7 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
  .gc-combo-pager,.gc-combo-detail-nav{gap:5px;font-size:.74rem}
  .gc-combo-pager .btn,.gc-combo-detail-nav .btn{padding-inline:8px}
 }
+
+.gc-combo-note{margin:0 0 12px;color:#53647d;font-size:.8rem;line-height:1.4}
+.gc-combo-single{width:100%;min-height:44px;margin-top:8px}
+.gc-combo-single:disabled{opacity:.48;cursor:not-allowed}

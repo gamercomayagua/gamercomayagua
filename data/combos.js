@@ -1,10 +1,10 @@
 // Cada combo usa las referencias y los precios vigentes del catálogo.
 window.GC_COMBOS = [
  // Navidad · Productos de temporada
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 01","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["6140","Bola de navidad 6sets 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 02","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["6141","Bola de navidad 6bolas a blister 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 03","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["5972","Bola de navidad 6 sets 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 04","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["5977","Bola de navidad 6sets 8cm"]]},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y alfombra 01","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["10392","Alfombra ovalada"]],"note":"La alfombra se coloca en el suelo, al lado del árbol de luces.","individualAction":"Añadir solo el árbol"},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y alfombra 02","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["10392","Alfombra ovalada"]],"note":"La alfombra se coloca en el suelo, al lado del árbol de luces.","individualAction":"Añadir solo el árbol"},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y alfombra 03","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["10379","Alfombra de 40 × 60 cm"]],"note":"La alfombra se coloca en el suelo, al lado del árbol de luces.","individualAction":"Añadir solo el árbol"},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y alfombra 04","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["10379","Alfombra de 40 × 60 cm"]],"note":"La alfombra se coloca en el suelo, al lado del árbol de luces.","individualAction":"Añadir solo el árbol"},
  {"group":"Navidad · Productos de temporada","name":"Navidad mini","products":[["5982","Árbol de 60 cm"],["11305","Luces blancas de 92 LED"],["6141","Set de 6 esferas de 8 cm"]]},
  {"group":"Navidad · Productos de temporada","name":"Navidad cálida","products":[["5982","Árbol de 60 cm"],["11306","Luces cálidas de 92 LED"],["5972","Set de esferas de 8 cm"],["11318","Estrella blanca de 30 LED"]]},
  {"group":"Navidad · Productos de temporada","name":"Entrada navideña","products":[["8281","Corona navideña"],["11321","Guirnalda de 270 cm"],["11312","Luces blancas de 270 LED"]]},
