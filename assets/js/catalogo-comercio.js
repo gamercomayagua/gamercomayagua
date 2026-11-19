@@ -38,7 +38,26 @@ function add(p){
  if((cart[p.id]||0)>=maxQty(p)){toast('Ya agregaste la cantidad máxima disponible.');return;}
  cart[p.id]=(cart[p.id]||0)+1;saveCart();toast('Agregado a tu carrito');
 }
-var combos=window.GC_COMBOS||[],comboGroup=$('comboGroup'),comboPrices='loading',comboPage=0,combosPerPage=6;
+var savedCombos=window.GC_COMBOS||[],comboGroup=$('comboGroup'),comboSize=$('comboSize'),comboOrder=$('comboOrder');
+var comboPrices='loading',comboPage=0,combosPerPage=6;
+var comboReference=prepare(window.GC_COMBO_REFERENCE||[]);
+var referenceNames=new Map(comboReference.map(function(p){return [p.id,p.name];}));
+var shortLabels={'6139':'Luces verdes','6138':'Luces azules','11305':'Luces blancas de 92 LED','6150':'Luces blancas de 93 LED','5980':'Luces blancas de 92 focos','11312':'Luces blancas de 270 LED','11328':'Luces blancas de 368 LED'};
+var extraCombos=(window.GC_EXTRA_COMBOS||[]).flatMap(function(group){
+ return group[1].map(function(row){
+  var items=row[1].map(function(id){return [id,shortLabels[id]||referenceNames.get(id)||'Ref. '+id];});
+  var usedNames=new Set();
+  items.forEach(function(item){
+   if(usedNames.has(item[1]))item[1]+=' (ref. '+item[0]+')';
+   usedNames.add(item[1]);
+  });
+  var ledTree=row[1].includes('11324')||row[1].includes('11325');
+  return {group:group[0],name:row[0],products:items,
+   note:ledTree?'Colocá las luces adicionales y los adornos por separado, alrededor del árbol LED.':''};
+ });
+});
+var season=extraCombos.filter(function(combo){return combo.group===savedCombos[0]?.group;});
+var combos=savedCombos.slice(0,4).concat(season,savedCombos.slice(4),extraCombos.filter(function(combo){return combo.group!==savedCombos[0]?.group;}));
 [...new Set(combos.map(function(combo){return combo.group;}))].forEach(function(group){comboGroup.add(new Option(group,group));});
 function comboItems(combo,byId){
  return combo.products.map(function(entry){
@@ -58,10 +77,18 @@ function addCombo(combo){
  saveCart();toast('Combo agregado a tu carrito');
 }
 var comboDetail=null,comboDetailTrigger=null;
-function activeCombos(){
- return combos.filter(function(combo){return combo.group===comboGroup.value;});
+function comboCost(items){
+ if(!items.every(function(item){return item.p?.price!=null;}))return null;
+ return items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100;
 }
-var comboReference=prepare(window.GC_COMBO_REFERENCE||[]);
+function activeCombos(byId){
+ var rows=combos.filter(function(combo){return combo.group===comboGroup.value&&(!comboSize.value||combo.products.length===+comboSize.value);});
+ if(!comboOrder.value)return rows;
+ var direction=comboOrder.value==='low'?1:-1;
+ return rows.map(function(combo){return {combo:combo,price:comboCost(comboItems(combo,byId))};})
+  .sort(function(a,b){return (a.price===null)-(b.price===null)||direction*((a.price||0)-(b.price||0));})
+  .map(function(entry){return entry.combo;});
+}
 function comboCatalog(){
  var byId=new Map(all.map(function(p){return [p.id,p];}));
  if(comboPrices!=='ready')comboReference.forEach(function(p){byId.set(p.id,p);});
@@ -70,8 +97,7 @@ function comboCatalog(){
 function comboSummary(items){
  var blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
  var pending=items.some(function(item){return item.p?.stock===null;});
- var priced=items.every(function(item){return item.p&&item.p.price!==null;});
- var total=priced?items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100:null;
+ var total=comboCost(items),priced=total!==null;
  var status=comboPrices==='loading'?'Actualizando precios':comboPrices==='unavailable'?'Precios por confirmar':blocked?'Combo no disponible':pending?'Existencias por confirmar':'Disponible';
  return {blocked:blocked,priced:priced,total:total,status:status,tone:blocked?'is-out':pending?'':'is-in',reference:comboPrices!=='ready'};
 }
@@ -99,20 +125,23 @@ function comboImageFallback(root){
 }
 function renderCombos(){
  var grid=$('comboGrid'),byId=comboCatalog();
- var groupCombos=activeCombos(),pageCount=Math.ceil(groupCombos.length/combosPerPage);
+ var groupCombos=activeCombos(byId),pageCount=Math.ceil(groupCombos.length/combosPerPage);
  var start=comboPage*combosPerPage;
- $('comboPager').hidden=pageCount<=1;
- $('comboPrevious').disabled=comboPage===0;
- $('comboNext').disabled=comboPage+1>=pageCount;
- $('comboPageStatus').textContent=groupCombos.length+' combos · '+(comboPage+1)+' de '+pageCount;
+ var status=groupCombos.length+' combos · '+(comboPage+1)+' de '+pageCount;
+ ['','Bottom'].forEach(function(suffix){
+  $('comboPager'+suffix).hidden=pageCount<=1;
+  $('comboPrevious'+suffix).disabled=comboPage===0;
+  $('comboNext'+suffix).disabled=comboPage+1>=pageCount;
+  $('comboPageStatus'+suffix).textContent=status;
+ });
  var cards=groupCombos.slice(start,start+combosPerPage).map(function(combo,index){
   var items=comboItems(combo,byId),summary=comboSummary(items);
   var card=document.createElement('article');card.className='gc-combo-card';
   card.innerHTML='<button class="gc-combo-photos" type="button" aria-label="Ver combo '+esc(combo.name)+'" data-combo-position="'+(start+index)+'">'+items.slice(0,3).map(function(item){
    return '<span class="gc-combo-photo" aria-hidden="true">'+comboThumbnail(item)+'</span>';
   }).join('')+'<span class="gc-combo-view-label">Ver combo'+(items.length>3?' · '+items.length+' artículos':'')+'</span></button><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
-   items.map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+comboLinePrice(item,summary)+'</li>';}).join('')+
-   '</ul>'+comboNote(combo)+comboTotal(summary)+comboAddButton(summary)+'</div>';
+   items.slice(0,4).map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+comboLinePrice(item,summary)+'</li>';}).join('')+
+   (items.length>4?'<li class="gc-combo-extra-count">+'+(items.length-4)+' artículos en la ficha</li>':'')+'</ul>'+comboNote(combo)+comboTotal(summary)+comboAddButton(summary)+'</div>';
   comboImageFallback(card);
   card.querySelector('.gc-combo-photos').onclick=function(){
    comboDetailTrigger=start+index;
@@ -170,7 +199,7 @@ function renderComboDetail(initial){
   box.querySelector('h2').focus({preventScroll:true});
  }
 }
-comboGroup.onchange=function(){comboPage=0;renderCombos();};
+[comboGroup,comboSize,comboOrder].forEach(function(control){control.onchange=function(){comboPage=0;renderCombos();};});
 function moveComboPage(step){
  comboPage+=step;
  renderCombos();
@@ -178,6 +207,8 @@ function moveComboPage(step){
 }
 $('comboPrevious').onclick=function(){moveComboPage(-1);};
 $('comboNext').onclick=function(){moveComboPage(1);};
+$('comboPreviousBottom').onclick=function(){moveComboPage(-1);};
+$('comboNextBottom').onclick=function(){moveComboPage(1);};
 function logoUrl(){return cleanUrl(store.logo)||window.GC_BRAND_LOGO||'';}
 function applyLogo(){
  var url=logoUrl(),target=$('brandLogo');

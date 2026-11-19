@@ -306,3 +306,32 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
 .gc-combo-note{margin:0 0 12px;color:#53647d;font-size:.8rem;line-height:1.4}
 .gc-combo-single{width:100%;min-height:44px;margin-top:8px}
 .gc-combo-single:disabled{opacity:.48;cursor:not-allowed}
+
+/* Encabezado de tienda y controles de catálogo. */
+.top{background:#fff;color:#152642;box-shadow:0 1px 0 #dce5f0}
+.top .container{min-height:64px}
+.top .navbtn{color:#162642;background:#eef3fb;border-color:#d8e3f4;min-height:42px}
+.top .brand span:last-child{line-height:1.15}
+.hero.gc-store-hero{padding:22px 0;background:#eaf0fa;color:#152642;border-bottom:1px solid #d6e2f3}
+.gc-store-hero .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.gc-store-hero h1{margin:0 0 5px;font-size:clamp(1.6rem,4.8vw,2.65rem)}
+.gc-store-hero p{color:#4b5e7a}
+.gc-hero-actions{display:flex;flex-wrap:wrap;gap:8px}
+.gc-hero-actions .gc-hero-combos{background:#162744;color:#fff}
+.gc-hero-actions .gc-hero-products{margin:0;color:#162744;background:#fff;border-color:#cfdcee}
+.gc-combo-head{align-items:start;flex-direction:column;gap:12px}
+.gc-combo-filters{width:100%;display:grid;grid-template-columns:minmax(0,1.5fr) repeat(2,minmax(0,1fr));gap:10px}
+.gc-combo-head label,.gc-combo-head select{width:100%;min-width:0}
+.gc-combo-head select:focus-visible{outline:2px solid #536fc6;outline-offset:2px}
+.gc-combo-pager-bottom{margin:15px 0 0}
+#comboNextBottom:not(:disabled){background:#172642;color:#fff;border-color:#172642}
+.gc-combo-extra-count{font-weight:750;color:#485e82}
+@media(max-width:600px){
+ .top .container{min-height:56px}
+ .hero.gc-store-hero{padding:15px 0}
+ .gc-store-hero .container{align-items:flex-start;flex-direction:column;gap:10px}
+ .gc-hero-actions .btn{padding-inline:12px}
+ .gc-combo-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .gc-combo-filters label:first-child{grid-column:1/-1}
+ .gc-combos{padding-top:18px}
+}
