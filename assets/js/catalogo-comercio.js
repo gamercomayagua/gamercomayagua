@@ -38,6 +38,50 @@ function add(p){
  if((cart[p.id]||0)>=maxQty(p)){toast('Ya agregaste la cantidad máxima disponible.');return;}
  cart[p.id]=(cart[p.id]||0)+1;saveCart();toast('Agregado a tu carrito');
 }
+var combos=window.GC_COMBOS||[],comboGroup=$('comboGroup'),comboPrices='loading';
+[...new Set(combos.map(function(combo){return combo.group;}))].forEach(function(group){comboGroup.add(new Option(group,group));});
+function comboItems(combo,byId){
+ return combo.products.map(function(entry){
+  return {p:byId.get(entry[0]),label:entry[1],qty:entry[2]||1};
+ });
+}
+function unavailableComboItem(item){
+ return !item.p||item.p.soldOut||item.p.price===null||maxQty(item.p)<item.qty;
+}
+function addCombo(combo){
+ var items=comboItems(combo,new Map(all.map(function(p){return [p.id,p];})));
+ if(comboPrices!=='ready'||items.some(unavailableComboItem)){toast('Este combo todavía no está disponible.');return;}
+ if(items.some(function(item){return (cart[item.p.id]||0)+item.qty>maxQty(item.p);})){
+  toast('El combo supera la cantidad disponible para tu carrito.');return;
+ }
+ items.forEach(function(item){cart[item.p.id]=(cart[item.p.id]||0)+item.qty;});
+ saveCart();toast('Combo agregado a tu carrito');
+}
+function renderCombos(){
+ var grid=$('comboGrid'),byId=new Map(all.map(function(p){return [p.id,p];}));
+ var cards=combos.filter(function(combo){return combo.group===comboGroup.value;}).map(function(combo){
+  var items=comboItems(combo,byId),blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
+  var pending=items.some(function(item){return item.p?.stock===null;});
+  var priced=comboPrices==='ready'&&items.every(function(item){return item.p&&item.p.price!==null;});
+  var total=priced?items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100:null;
+  var status=comboPrices==='loading'?'Actualizando precios':comboPrices==='unavailable'?'Precios por confirmar':blocked?'Combo no disponible':pending?'Existencias por confirmar':'Disponible';
+  var card=document.createElement('article');card.className='gc-combo-card';
+  card.innerHTML='<div class="gc-combo-photos" aria-hidden="true">'+items.slice(0,3).map(function(item){
+   return '<div class="gc-combo-photo">'+(item.p?.photo?photoMarkup(item.p):'<span>Sin foto</span>')+'</div>';
+  }).join('')+'</div><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
+   items.map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+
+    (priced?'<span>'+money(Math.round(item.p.price*100)*item.qty/100)+'</span>':'')+'</li>';}).join('')+
+   '</ul><div class="gc-combo-total"><div><small>Total del combo</small><strong>'+money(total)+'</strong></div>'+
+   '<span class="gc-combo-stock '+(blocked?'is-out':pending?'':'is-in')+'">'+status+'</span></div>'+
+   '<button class="btn gc-combo-add" type="button"'+(blocked?' disabled':'')+'>Añadir combo al carrito</button></div>';
+  card.querySelectorAll('.gc-product-image').forEach(function(img){img.onerror=function(){img.parentElement.textContent='Sin foto';};});
+  card.querySelector('button').onclick=function(){addCombo(combo);};
+  return card;
+ });
+ grid.replaceChildren(...cards);
+ if(!cards.length)grid.textContent='No hay combos disponibles.';
+}
+comboGroup.onchange=renderCombos;
 function logoUrl(){return cleanUrl(store.logo)||window.GC_BRAND_LOGO||'';}
 function applyLogo(){
  var url=logoUrl(),target=$('brandLogo');
@@ -317,7 +361,7 @@ function updateStore(next){
  applyLogo();
  try{localStorage.setItem('gc-mark-config',JSON.stringify({watermark:store.watermark,logo:store.logo}));}catch(error){}
  if(oldMark===JSON.stringify([store.watermark,store.logo]))return;
- document.querySelectorAll('.photo,.gc-detail-image').forEach(function(frame){
+ document.querySelectorAll('.photo,.gc-detail-image,.gc-combo-photo').forEach(function(frame){
   frame.querySelector('.gc-watermark')?.remove();
   if(frame.querySelector('.gc-product-image'))frame.insertAdjacentHTML('beforeend',watermarkMarkup('photos'));
  });
@@ -365,7 +409,7 @@ async function init(){
   var retained=all.some(function(p){return p.own;});
   $('ownOnly').hidden=!retained;
   if(!retained){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}
-  selectCategory();filter(false);
+  selectCategory();filter(false);renderCombos();
   if(currentDialog==='cart')cartView(true);
  }
  var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'1'}):null;
@@ -393,7 +437,8 @@ async function init(){
   $('syncStatus').textContent='Catálogo Gamer Comayagua';
  }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});
  var refreshSupplier=Promise.all([supplierLive,supplierSnapshot]).then(function(results){
-  if(results[0]?.length){supplier=prepare(results[0]);updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
+  if(results[0]?.length){comboPrices='ready';supplier=prepare(results[0]);updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
+  else{comboPrices='unavailable';renderCombos();}
  });
  await Promise.all([ownSnapshot,supplierSnapshot]);
  catalogReady=true;
