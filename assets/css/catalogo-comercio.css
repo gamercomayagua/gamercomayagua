@@ -265,3 +265,8 @@
 .gc-combo-add{min-height:44px}
 .gc-combo-add:disabled{background:#e6ebf2;color:#566983;cursor:not-allowed;filter:none}
 @media(max-width:600px){.gc-combo-head{align-items:stretch;flex-direction:column;gap:11px}.gc-combos{scroll-margin-top:66px}}
+
+.gc-combo-pager{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:17px;font-size:.83rem;color:#36506e;text-align:center}
+.gc-combo-pager[hidden]{display:none}
+.gc-combo-pager .btn{min-height:44px}
+.gc-combo-pager .btn:disabled{opacity:.48;cursor:not-allowed;filter:none}

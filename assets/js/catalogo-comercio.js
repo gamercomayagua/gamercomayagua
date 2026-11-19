@@ -38,7 +38,7 @@ function add(p){
  if((cart[p.id]||0)>=maxQty(p)){toast('Ya agregaste la cantidad máxima disponible.');return;}
  cart[p.id]=(cart[p.id]||0)+1;saveCart();toast('Agregado a tu carrito');
 }
-var combos=window.GC_COMBOS||[],comboGroup=$('comboGroup'),comboPrices='loading';
+var combos=window.GC_COMBOS||[],comboGroup=$('comboGroup'),comboPrices='loading',comboPage=0,combosPerPage=6;
 [...new Set(combos.map(function(combo){return combo.group;}))].forEach(function(group){comboGroup.add(new Option(group,group));});
 function comboItems(combo,byId){
  return combo.products.map(function(entry){
@@ -59,7 +59,14 @@ function addCombo(combo){
 }
 function renderCombos(){
  var grid=$('comboGrid'),byId=new Map(all.map(function(p){return [p.id,p];}));
- var cards=combos.filter(function(combo){return combo.group===comboGroup.value;}).map(function(combo){
+ var groupCombos=combos.filter(function(combo){return combo.group===comboGroup.value;});
+ var pageCount=Math.ceil(groupCombos.length/combosPerPage);
+ var start=comboPage*combosPerPage;
+ $('comboPager').hidden=pageCount<=1;
+ $('comboPrevious').disabled=comboPage===0;
+ $('comboNext').disabled=comboPage+1>=pageCount;
+ $('comboPageStatus').textContent=groupCombos.length+' combos · '+(comboPage+1)+' de '+pageCount;
+ var cards=groupCombos.slice(start,start+combosPerPage).map(function(combo){
   var items=comboItems(combo,byId),blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
   var pending=items.some(function(item){return item.p?.stock===null;});
   var priced=comboPrices==='ready'&&items.every(function(item){return item.p&&item.p.price!==null;});
@@ -81,7 +88,14 @@ function renderCombos(){
  grid.replaceChildren(...cards);
  if(!cards.length)grid.textContent='No hay combos disponibles.';
 }
-comboGroup.onchange=renderCombos;
+comboGroup.onchange=function(){comboPage=0;renderCombos();};
+function moveComboPage(step){
+ comboPage+=step;
+ renderCombos();
+ $('combos').scrollIntoView({block:'start'});
+}
+$('comboPrevious').onclick=function(){moveComboPage(-1);};
+$('comboNext').onclick=function(){moveComboPage(1);};
 function logoUrl(){return cleanUrl(store.logo)||window.GC_BRAND_LOGO||'';}
 function applyLogo(){
  var url=logoUrl(),target=$('brandLogo');
