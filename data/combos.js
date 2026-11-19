@@ -1,6 +1,10 @@
 // Cada combo usa las referencias y los precios vigentes del catálogo.
 window.GC_COMBOS = [
  // Navidad · Productos de temporada
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 01","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["6140","Bola de navidad 6sets 8cm"]]},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 02","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["6141","Bola de navidad 6bolas a blister 8cm"]]},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 03","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["5972","Bola de navidad 6 sets 8cm"]]},
+ {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 04","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["5977","Bola de navidad 6sets 8cm"]]},
  {"group":"Navidad · Productos de temporada","name":"Navidad mini","products":[["5982","Árbol de 60 cm"],["11305","Luces blancas de 92 LED"],["6141","Set de 6 esferas de 8 cm"]]},
  {"group":"Navidad · Productos de temporada","name":"Navidad cálida","products":[["5982","Árbol de 60 cm"],["11306","Luces cálidas de 92 LED"],["5972","Set de esferas de 8 cm"],["11318","Estrella blanca de 30 LED"]]},
  {"group":"Navidad · Productos de temporada","name":"Entrada navideña","products":[["8281","Corona navideña"],["11321","Guirnalda de 270 cm"],["11312","Luces blancas de 270 LED"]]},
@@ -37,10 +41,6 @@ window.GC_COMBOS = [
  {"group":"Navidad · Productos de temporada","name":"Ventana navideña 01","products":[["11314","240 LED lluvia inteligente 1 x 6 m, multicolor"],["5972","Bola de navidad 6 sets 8cm"],["2633","Navidad adorno"]]},
  {"group":"Navidad · Productos de temporada","name":"Ventana navideña 02","products":[["11315","240 LED lluvia inteligente 1 x 6 m, blanco"],["5977","Bola de navidad 6sets 8cm"],["2633","Navidad adorno"]]},
  {"group":"Navidad · Productos de temporada","name":"Ventana navideña 03","products":[["11314","240 LED lluvia inteligente 1 x 6 m, multicolor"],["6131","Bola de navidad 6bolas a blister 8cm"],["2633","Navidad adorno"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 01","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["6140","Bola de navidad 6sets 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 02","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["6141","Bola de navidad 6bolas a blister 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 03","products":[["11324","Lluvia estilo árbol 240 LED, 1.5 m"],["5972","Bola de navidad 6 sets 8cm"]]},
- {"group":"Navidad · Productos de temporada","name":"Árbol de luces y adornos 04","products":[["11325","Lluvia estilo árbol 268 LED, 1.8 m"],["5977","Bola de navidad 6sets 8cm"]]},
  // Económicos
  {"group":"Económicos","name":"Mesa económica","products":[["11302","Plato hondo con flores",2],["7907","Juego de 4 cubiertos"]]},
  {"group":"Económicos","name":"Cocina por menos","products":[["9151","Tazón plástico"],["2691","Juego de cucharones"]]},

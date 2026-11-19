@@ -57,36 +57,104 @@ function addCombo(combo){
  items.forEach(function(item){cart[item.p.id]=(cart[item.p.id]||0)+item.qty;});
  saveCart();toast('Combo agregado a tu carrito');
 }
+var comboDetail=null,comboDetailTrigger=null;
+function activeCombos(){
+ return combos.filter(function(combo){return combo.group===comboGroup.value;});
+}
+function comboSummary(items){
+ var blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
+ var pending=items.some(function(item){return item.p?.stock===null;});
+ var priced=comboPrices==='ready'&&items.every(function(item){return item.p&&item.p.price!==null;});
+ var total=priced?items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100:null;
+ var status=comboPrices==='loading'?'Actualizando precios':comboPrices==='unavailable'?'Precios por confirmar':blocked?'Combo no disponible':pending?'Existencias por confirmar':'Disponible';
+ return {blocked:blocked,priced:priced,total:total,status:status,tone:blocked?'is-out':pending?'':'is-in'};
+}
+function comboTotal(summary){
+ return '<div class="gc-combo-total"><div><small>Total del combo</small><strong>'+money(summary.total)+'</strong></div>'+
+  '<span class="gc-combo-stock '+summary.tone+'">'+summary.status+'</span></div>';
+}
+function comboLinePrice(item,summary){
+ return summary.priced?'<span>'+money(Math.round(item.p.price*100)*item.qty/100)+'</span>':'';
+}
+function comboAddButton(summary){
+ return '<button class="btn gc-combo-add" type="button"'+(summary.blocked?' disabled':'')+'>Añadir combo al carrito</button>';
+}
+function comboThumbnail(item){
+ // Vista reducida dentro de un botón, con elementos de texto válidos en el botón.
+ return item.p?.photo?photoMarkup(item.p).replace(/<(\/?)div\b/g,'<$1span'):'<span>Sin foto</span>';
+}
+function comboImageFallback(root){
+ root.querySelectorAll('.gc-product-image').forEach(function(img){
+  img.onerror=function(){img.parentElement.textContent='Sin foto';};
+ });
+}
 function renderCombos(){
  var grid=$('comboGrid'),byId=new Map(all.map(function(p){return [p.id,p];}));
- var groupCombos=combos.filter(function(combo){return combo.group===comboGroup.value;});
- var pageCount=Math.ceil(groupCombos.length/combosPerPage);
+ var groupCombos=activeCombos(),pageCount=Math.ceil(groupCombos.length/combosPerPage);
  var start=comboPage*combosPerPage;
  $('comboPager').hidden=pageCount<=1;
  $('comboPrevious').disabled=comboPage===0;
  $('comboNext').disabled=comboPage+1>=pageCount;
  $('comboPageStatus').textContent=groupCombos.length+' combos · '+(comboPage+1)+' de '+pageCount;
- var cards=groupCombos.slice(start,start+combosPerPage).map(function(combo){
-  var items=comboItems(combo,byId),blocked=comboPrices!=='ready'||items.some(unavailableComboItem);
-  var pending=items.some(function(item){return item.p?.stock===null;});
-  var priced=comboPrices==='ready'&&items.every(function(item){return item.p&&item.p.price!==null;});
-  var total=priced?items.reduce(function(sum,item){return sum+Math.round(item.p.price*100)*item.qty;},0)/100:null;
-  var status=comboPrices==='loading'?'Actualizando precios':comboPrices==='unavailable'?'Precios por confirmar':blocked?'Combo no disponible':pending?'Existencias por confirmar':'Disponible';
+ var cards=groupCombos.slice(start,start+combosPerPage).map(function(combo,index){
+  var items=comboItems(combo,byId),summary=comboSummary(items);
   var card=document.createElement('article');card.className='gc-combo-card';
-  card.innerHTML='<div class="gc-combo-photos" aria-hidden="true">'+items.slice(0,3).map(function(item){
-   return '<div class="gc-combo-photo">'+(item.p?.photo?photoMarkup(item.p):'<span>Sin foto</span>')+'</div>';
-  }).join('')+'</div><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
-   items.map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+
-    (priced?'<span>'+money(Math.round(item.p.price*100)*item.qty/100)+'</span>':'')+'</li>';}).join('')+
-   '</ul><div class="gc-combo-total"><div><small>Total del combo</small><strong>'+money(total)+'</strong></div>'+
-   '<span class="gc-combo-stock '+(blocked?'is-out':pending?'':'is-in')+'">'+status+'</span></div>'+
-   '<button class="btn gc-combo-add" type="button"'+(blocked?' disabled':'')+'>Añadir combo al carrito</button></div>';
-  card.querySelectorAll('.gc-product-image').forEach(function(img){img.onerror=function(){img.parentElement.textContent='Sin foto';};});
-  card.querySelector('button').onclick=function(){addCombo(combo);};
+  card.innerHTML='<button class="gc-combo-photos" type="button" aria-label="Ver combo '+esc(combo.name)+'" data-combo-position="'+(start+index)+'">'+items.slice(0,3).map(function(item){
+   return '<span class="gc-combo-photo" aria-hidden="true">'+comboThumbnail(item)+'</span>';
+  }).join('')+'<span class="gc-combo-view-label">Ver combo</span></button><div class="gc-combo-body"><h3>'+esc(combo.name)+'</h3><ul>'+
+   items.map(function(item){return '<li><span>'+item.qty+' × '+esc(item.label)+'</span>'+comboLinePrice(item,summary)+'</li>';}).join('')+
+   '</ul>'+comboTotal(summary)+comboAddButton(summary)+'</div>';
+  comboImageFallback(card);
+  card.querySelector('.gc-combo-photos').onclick=function(){
+   comboDetailTrigger=start+index;
+   comboDetail={list:groupCombos,index:start+index,photo:0};
+   renderComboDetail(true);
+  };
+  card.querySelector('.gc-combo-add').onclick=function(){addCombo(combo);};
   return card;
  });
  grid.replaceChildren(...cards);
  if(!cards.length)grid.textContent='No hay combos disponibles.';
+ if(currentDialog==='combo'&&comboDetail)renderComboDetail(false);
+}
+function renderComboDetail(initial){
+ var state=comboDetail,combo=state.list[state.index];
+ var items=comboItems(combo,new Map(all.map(function(p){return [p.id,p];}))),summary=comboSummary(items);
+ var box=wrap('<div class="gc-combo-detail"><header><h2 id="comboDetailTitle" tabindex="-1">'+esc(combo.name)+'</h2>'+
+  '<nav class="gc-combo-detail-nav" aria-label="Navegar entre combos">'+
+  '<button type="button" class="btn outline" data-combo-move="-1"'+(state.index===0?' disabled':'')+'>← Anterior</button>'+
+  '<span>Combo '+(state.index+1)+' de '+state.list.length+'</span>'+
+  '<button type="button" class="btn outline" data-combo-move="1"'+(state.index+1===state.list.length?' disabled':'')+'>Siguiente →</button></nav></header>'+
+  '<div class="gc-combo-detail-layout"><div><figure><div class="gc-combo-photo gc-combo-photo-large"></div><figcaption></figcaption></figure></div>'+
+  '<div class="gc-combo-detail-summary"><h3>Qué incluye</h3><ul>'+items.map(function(item,i){
+   return '<li><button class="gc-combo-item" data-photo-index="'+i+'" type="button"><span class="gc-combo-photo" aria-hidden="true">'+
+    comboThumbnail(item)+'</span><span>'+item.qty+' × '+esc(item.label)+comboLinePrice(item,summary)+'</span></button></li>';
+  }).join('')+'</ul>'+comboTotal(summary)+comboAddButton(summary)+'</div></div></div>');
+ var photo=box.querySelector('.gc-combo-photo-large'),caption=box.querySelector('figcaption');
+ function selectPhoto(index){
+  state.photo=index;
+  var item=items[index];
+  photo.innerHTML=item.p?.photo?photoMarkup(item.p).replace('loading="lazy"','loading="eager"'):'<span>Sin foto</span>';
+  caption.textContent=item.label;
+  comboImageFallback(photo);
+  box.querySelectorAll('[data-photo-index]').forEach(function(button){
+   button.setAttribute('aria-pressed',String(+button.dataset.photoIndex===index));
+  });
+ }
+ selectPhoto(state.photo);
+ comboImageFallback(box);
+ box.querySelectorAll('[data-photo-index]').forEach(function(button){
+  button.onclick=function(){selectPhoto(+button.dataset.photoIndex);photo.scrollIntoView({block:'nearest'});};
+ });
+ box.querySelectorAll('[data-combo-move]').forEach(function(button){
+  button.onclick=function(){state.index+=+button.dataset.comboMove;state.photo=0;renderComboDetail(true);};
+ });
+ box.querySelector('.gc-combo-add').onclick=function(){addCombo(combo);};
+ open(box,'combo');
+ if(initial){
+  $('dialogBody').parentElement.scrollTop=0;
+  box.querySelector('h2').focus({preventScroll:true});
+ }
 }
 comboGroup.onchange=function(){comboPage=0;renderCombos();};
 function moveComboPage(step){
@@ -150,8 +218,19 @@ function render(){
  card.querySelector('.add').onclick=function(){add(p);};fragment.appendChild(card);
  });root.appendChild(fragment);$('more').style.display=offset<listed.length?'block':'none';updateCatalogControls();
 }
-function open(node,kind){$('dialogBody').replaceChildren();$('dialogBody').appendChild(node);$('dialog').dataset.view=kind;$('dialog').classList.add('open');document.body.style.overflow='hidden';currentDialog=kind;}
-function close(){$('dialog').classList.remove('open');document.body.style.overflow='';currentDialog='';}
+function open(node,kind){
+ var dialog=$('dialog');
+ $('dialogBody').replaceChildren(node);
+ dialog.dataset.view=kind;
+ if(kind==='combo')dialog.setAttribute('aria-labelledby','comboDetailTitle');
+ else dialog.removeAttribute('aria-labelledby');
+ dialog.classList.add('open');document.body.style.overflow='hidden';currentDialog=kind;
+}
+function close(){
+ var restore=currentDialog==='combo'?$('comboGrid').querySelector('[data-combo-position="'+comboDetailTrigger+'"]'):null;
+ $('dialog').classList.remove('open');document.body.style.overflow='';currentDialog='';comboDetail=null;comboDetailTrigger=null;
+ if(restore)restore.focus({preventScroll:true});
+}
 function wrap(html){var el=document.createElement('div');el.innerHTML=html;return el;}
 function localDestination(){
  return (window.GC_LOCAL_DELIVERIES||[]).find(function(x){return x.id===localZone;})||null;
