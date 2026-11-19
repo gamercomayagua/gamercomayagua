@@ -5,6 +5,9 @@ var $=function(id){return document.getElementById(id);};
 var PHONE='50431517755';
 var CONFIG={shipping:110,tigo:0.10,cod:0.15,codMin:350};
 var catalogReady=false;
+var incomingLink=new URLSearchParams(location.search);
+var requestedProduct=incomingLink.get('producto'),requestedCategory=incomingLink.get('categoria');
+var sharePages;
 var store={cod:null,watermark:window.GC_BOOT_WATERMARK},selectedCatalog=new Set(),selectingCatalog=false,onlyPromos=false,onlyOwn=false,all=[],listed=[],offset=24,cart=Object.create(null),shippingMode='national',localZone='',payMode='transfer',currentDialog='';
 var money=function(n){return n===null||n===undefined?'Consultar precio':'L '+Number(n).toLocaleString('es-HN',{minimumFractionDigits:2,maximumFractionDigits:2});};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
@@ -212,7 +215,26 @@ $('comboNextBottom').onclick=function(){moveComboPage(1);};
 function logoUrl(){return cleanUrl(store.logo)||window.GC_BRAND_LOGO||'';}
 function applyLogo(){
  var url=logoUrl(),target=$('brandLogo');
- if(url){target.src=url;target.hidden=false;$('brandFallback').hidden=true;}
+ if(url)target.src=url;
+}
+async function shareStoreLink(type,key,title){
+ sharePages=sharePages||fetch('data/enlaces.json').then(function(response){
+  if(!response.ok)throw new Error('Enlaces no disponibles');
+  return response.json();
+ }).catch(function(){sharePages=null;return {};});
+ var pages=(await sharePages)[type==='producto'?'products':'categories']||{};
+ var path=Object.hasOwn(pages,key)?pages[key]:'';
+ var url=path?new URL(path,location.href):new URL('./',location.href);
+ if(!path){
+  url.searchParams.set(type,key);
+  if(type==='categoria')url.hash='catalogo';
+ }
+ if(navigator.share){
+  try{await navigator.share({title:title+' | Gamer Comayagua',url:url.href});return;}
+  catch(error){if(error.name==='AbortError')return;}
+ }
+ try{await navigator.clipboard.writeText(url.href);toast('Enlace copiado');}
+ catch(error){window.prompt('Copiá este enlace para compartirlo',url.href);}
 }
 function watermarkMarkup(surface){
  var wm=store.watermark;
@@ -243,6 +265,7 @@ function updateCatalogControls(){
  $('gcCreateCatalog').disabled=selectedCatalog.size===0;
  $('gcCreateCatalog').textContent=selectedCatalog.size?'Crear catálogo ('+selectedCatalog.size+')':'Crear catálogo';
  $('gcCategoryCatalog').disabled=!listed.length;
+ $('gcShareCategory').hidden=!$('category').value;
 }
 function render(){
  var root=$('products');root.replaceChildren();$('resultCount').textContent=listed.length.toLocaleString('es-HN')+' productos';
@@ -306,6 +329,9 @@ function detail(p){
  box.querySelector('.gc-add').onclick=function(){add(p);};
  box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.ref+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
  box.querySelector('.gc-share-ficha').onclick=function(){openCatalog('product',p);};
+ var share=wrap('<button type="button" class="btn outline gc-share-link">Compartir enlace</button>').firstElementChild;
+ share.onclick=function(){shareStoreLink('producto',p.id,p.name);};
+ box.querySelector('.gc-detail-actions').appendChild(share);
  open(box,'product');
 }
 function cartItems(){return Object.keys(cart).map(function(id){var p=all.find(function(x){return x.id===id;}),qty=p?Math.min(cart[id],maxQty(p)):0;return p&&!p.soldOut&&p.price!==null?{p:p,qty:qty}:null;}).filter(Boolean);}
@@ -370,7 +396,7 @@ function printQuote(items,q,comparative){
  var customerInfo=[customer.nombre,customer.telefono,customer.departamento,customer.municipio,customer.direccion].filter(Boolean).map(esc).join(' · ');
  var comparison=comparative?comparativeQuote(q):'';
  var full='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+reference+' | Gamer Comayagua</title>'+
- '<style>'+(window.GC_MARKS?window.GC_MARKS.styles:'')+'*{box-sizing:border-box}.quote-logo{width:48px;height:48px;object-fit:contain;vertical-align:middle;margin-right:10px}.content{position:relative}.content> :not(.gc-watermark){position:relative;z-index:2}body{background:#eff3f8;color:#182847;font-family:Arial,Helvetica,sans-serif;margin:0;padding:24px;font-size:12px}.wrap{max-width:810px;margin:auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px #15253e1a}.head{background:#fff;color:#182847;border-bottom:4px solid #b8273c;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:18px}.brand{font-size:23px;font-weight:900;letter-spacing:.01em}.label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#afc4e3;margin-bottom:6px}.headerinfo{text-align:right;font-size:11px;line-height:1.7;color:#516482}.content{padding:30px 34px}.intro{display:flex;justify-content:space-between;gap:15px;margin-bottom:24px}.intro h1{font-size:22px;margin:2px 0 5px}.muted{color:#6e7e98}.badge{border:1px solid #cce5d8;color:#116b45;background:#f0f9f4;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:bold;align-self:flex-start}.table{width:100%;border-collapse:collapse;margin:14px 0 24px}.table thead{background:#edf2f8}.table th{text-align:left;font-size:10px;color:#516482;text-transform:uppercase;letter-spacing:.05em;padding:11px 9px}.table td{padding:12px 9px;border-bottom:1px solid #e8edf4;line-height:1.4}.table th:last-child,.table td.last{text-align:right}.n{color:#a4afbf;font-weight:bold;font-size:10px;margin-right:7px}.sumgrid{display:grid;grid-template-columns:1fr .95fr;gap:22px}.box{border:1px solid #e1e8f0;border-radius:11px;padding:16px}.boxtitle{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7384a0;font-weight:bold;margin:0 0 12px}.line{display:flex;justify-content:space-between;gap:10px;padding:5px 0}.line strong{text-align:right}.grand{background:#fae9ec;color:#901c2d;padding:15px 16px;border-radius:9px;display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-top:12px}.grand strong{font-size:21px}.data{font-size:11px;line-height:1.65;color:#536782;overflow-wrap:anywhere}.foot{margin-top:22px;padding-top:13px;border-top:1px solid #e5ebf3;color:#7e8ba0;font-size:10px;line-height:1.5}.quote-ref{display:block;font-size:15px;font-weight:bold;color:#182847}.quote-kind{display:block;font-weight:bold;color:#526683}.quote-compare{margin-top:16px;break-inside:avoid}.quote-compare h2{font-size:15px;margin:0 0 8px}.quote-methods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.quote-methods .box{padding:10px}.quote-methods b{display:block;font-size:17px;color:#9e1b33;margin:5px 0}.quote-methods small{display:block;line-height:1.4;margin-top:3px}.tools{text-align:center;padding-bottom:18px}.tools button{font-weight:bold;background:#df354c;color:white;border:0;border-radius:9px;padding:12px 21px;font-size:13px}.note{padding:9px 11px;background:#f6f8fb;border-radius:8px;color:#5f6e88;font-size:10px;margin-top:11px}@page{size:letter;margin:12mm}@media print{body{background:white;margin:0;padding:0}.wrap{max-width:none;box-shadow:none;border-radius:0}.head{padding:20px 24px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.content{padding:22px 24px}.tools{display:none}.grand{-webkit-print-color-adjust:exact;print-color-adjust:exact}.badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}.box,.grand,.intro,tbody tr{break-inside:avoid}}@media screen and (max-width:620px){body{padding:9px}.head{padding:20px}.brand{font-size:18px}.content{padding:16px}.intro{display:block}.badge{display:inline-block;margin:10px 0}.sumgrid,.quote-methods{grid-template-columns:1fr}.table td{padding:8px 5px;font-size:11px}.table th{padding:8px 5px;font-size:9px}.grand strong{font-size:19px}.headerinfo{font-size:10px}}</style>'+
+ '<style>'+(window.GC_MARKS?window.GC_MARKS.styles:'')+'*{box-sizing:border-box}.quote-logo{width:48px;height:48px;object-fit:contain;vertical-align:middle;margin-right:10px}.content{position:relative}.content> :not(.gc-watermark){position:relative;z-index:2}body{background:#eff3f8;color:#182847;font-family:Arial,Helvetica,sans-serif;margin:0;padding:24px;font-size:12px}.wrap{max-width:810px;margin:auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px #15253e1a}.head{background:#fff;color:#182847;border-bottom:4px solid #b8273c;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:18px}.brand{font-size:23px;font-weight:900;letter-spacing:.01em}.label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#afc4e3;margin-bottom:6px}.headerinfo{text-align:right;font-size:11px;line-height:1.7;color:#516482}.content{padding:30px 34px}.intro{display:flex;justify-content:space-between;gap:15px;margin-bottom:24px}.intro h1{font-size:22px;margin:2px 0 5px}.muted{color:#6e7e98}.badge{border:1px solid #cce5d8;color:#116b45;background:#f0f9f4;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:bold;align-self:flex-start}.table{width:100%;border-collapse:collapse;margin:14px 0 24px}.table thead{background:#edf2f8}.table th{text-align:left;font-size:10px;color:#516482;text-transform:uppercase;letter-spacing:.05em;padding:11px 9px}.table td{padding:12px 9px;border-bottom:1px solid #e8edf4;line-height:1.4}.table th:last-child,.table td.last{text-align:right}.n{color:#a4afbf;font-weight:bold;font-size:10px;margin-right:7px}.sumgrid{display:grid;grid-template-columns:1fr .95fr;gap:22px}.box{border:1px solid #e1e8f0;border-radius:11px;padding:16px}.boxtitle{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7384a0;font-weight:bold;margin:0 0 12px}.line{display:flex;justify-content:space-between;gap:10px;padding:5px 0}.line strong{text-align:right}.grand{background:#fae9ec;color:#901c2d;padding:15px 16px;border-radius:9px;display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-top:12px}.grand strong{font-size:21px}.data{font-size:11px;line-height:1.65;color:#536782;overflow-wrap:anywhere}.foot{margin-top:22px;padding-top:13px;border-top:1px solid #e5ebf3;color:#7e8ba0;font-size:10px;line-height:1.5}.quote-ref{display:block;font-size:15px;font-weight:bold;color:#182847}.quote-kind{display:block;font-weight:bold;color:#526683}.quote-compare{margin-top:16px;break-inside:avoid}.quote-compare h2{font-size:15px;margin:0 0 8px}.quote-methods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.quote-methods .box{padding:10px}.quote-methods b{display:block;font-size:17px;color:#9e1b33;margin:5px 0}.quote-methods small{display:block;line-height:1.4;margin-top:3px}.tools{text-align:center;padding-bottom:18px}.tools button{font-weight:bold;background:#df354c;color:white;border:0;border-radius:9px;padding:12px 21px;font-size:13px}.note{padding:9px 11px;background:#f6f8fb;border-radius:8px;color:#5f6e88;font-size:10px;margin-top:11px}@page{size:letter;margin:12mm}@media print{body{background:white;margin:0;padding:0}.wrap{max-width:none;box-shadow:none;border-radius:0}.head{padding:20px 24px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.content{padding:22px 24px}.tools{display:none}.grand{-webkit-print-color-adjust:exact;print-color-adjust:exact}.badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}.box,.grand,.intro,tbody tr{break-inside:avoid}}@media screen and (max-width:620px){body{padding:8px}.head{padding:14px;display:grid;gap:8px}.brand{font-size:17px}.quote-logo{width:34px;height:34px}.content{padding:12px}.intro{display:block}.badge{display:inline-block;margin:10px 0}.sumgrid{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:5px}.sumgrid .box{padding:8px}.boxtitle{font-size:9px;margin-bottom:6px}.line{gap:4px;font-size:10px}.quote-compare h2{font-size:14px}.quote-methods{gap:4px}.quote-methods .box{padding:7px 5px;min-width:0;overflow-wrap:anywhere}.quote-methods strong{display:block;font-size:10px;line-height:1.25;min-height:2.5em}.quote-methods b{font-size:clamp(11px,3.1vw,16px);line-height:1.2;font-variant-numeric:tabular-nums}.quote-methods small{font-size:9px}.quote-ref{font-size:12px}.table td{padding:8px 5px;font-size:11px}.table th{padding:8px 5px;font-size:9px}.grand strong{font-size:19px}.headerinfo{font-size:10px;text-align:left}.table{margin-bottom:14px}.table td:not(:first-child){white-space:nowrap}.data{font-size:10px}}</style>'+
  '</head><body><div class="tools"><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div><div class="wrap"><header class="head"><div><div class="brand">'+quoteLogo+'GAMER COMAYAGUA</div></div><div class="headerinfo"><span class="quote-kind">'+(comparative?'Cotización · 3 formas de pago':'Cotización')+'</span><span class="quote-ref">'+reference+'</span><time datetime="'+now.toISOString()+'">'+esc(date)+' · Honduras</time></div></header><main class="content">'+marks+'<div class="intro"><div><h1>Cotización</h1></div></div><table class="table"><thead><tr><th>Producto</th><th>Cant.</th><th>Unitario</th><th>Importe</th></tr></thead><tbody>'+rows+'</tbody></table><div class="sumgrid"><div class="box"><div class="boxtitle">ENTREGA Y CLIENTE</div><div class="data"><strong>'+esc(deliveryLabel(q))+'</strong><br>Costo de envío: '+shipping+'<br><br>'+(customerInfo||'Datos de entrega pendientes de confirmar')+'</div></div><div class="box"><div class="boxtitle">RESUMEN DEL PEDIDO</div><div class="line"><span>Productos</span><strong>'+subtotal+'</strong></div><div class="line"><span>Envío</span><strong>'+shipping+'</strong></div>'+(comparative?'':'<div class="line"><span>Forma de pago</span><strong>'+pay+'</strong></div><div class="line"><span>Comisión'+(payMode==='tigo'?' (10%)':payMode==='cod'?' (15%)':'')+'</span><strong>'+(fee===null?'Por confirmar':money(fee))+'</strong></div><div class="grand"><span>TOTAL</span><strong>'+total+'</strong></div>')+'</div></div>'+comparison+'<p class="note">Los precios y existencias se confirman al realizar el pedido. '+(!comparative&&payMode==='cod'&&q.prices.cod!==null?'Anticipo: '+money(q.shipping+q.codFee)+' · Saldo al recibir: '+money(q.subtotal)+'. ':'')+'Consulta o confirma tu pedido por WhatsApp al +504 3151-7755.</p><footer class="foot">Gamer Comayagua · Envíos a toda Honduras · Este documento no constituye una factura ni una confirmación de existencias.</footer></main></div></body></html>';
  win.document.open();win.document.write(full);win.document.close();
 }
@@ -611,7 +637,22 @@ async function init(){
   var retained=all.some(function(p){return p.own;});
   $('ownOnly').hidden=!retained;
   if(!retained){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}
-  selectCategory();filter(false);renderCombos();
+  selectCategory();
+  if(requestedCategory&&all.some(function(product){return product.category===requestedCategory;})){
+   $('category').value=requestedCategory;
+   requestedCategory=null;
+   $('catalogo').scrollIntoView({block:'start',behavior:'instant'});
+  }
+  filter(false);renderCombos();
+  if(requestedProduct){
+   var linked=all.find(function(product){return product.id===requestedProduct;});
+   if(!linked){
+    var duplicate=supplier.find(function(product){return product.id===requestedProduct;});
+    var key=duplicate&&catalogKey(duplicate);
+    if(key)linked=own.find(function(product){return catalogKey(product)===key;});
+   }
+   if(linked){requestedProduct=null;detail(linked);}
+  }
   if(currentDialog==='cart')cartView(true);
  }
  var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'400'}):null;
@@ -645,6 +686,7 @@ async function init(){
  await Promise.all([ownSnapshot,supplierSnapshot]);
  catalogReady=true;
  await Promise.all([refreshOwn,refreshSupplier]);
+ if(requestedProduct){toast('Este producto ya no aparece en el catálogo');requestedProduct=null;}
 }
 function openCatalog(source,product){
  if(!window.GC_EXPORT)return;
@@ -662,6 +704,10 @@ function openCatalog(source,product){
 $('gcSelectCatalog').onclick=function(){selectingCatalog=!selectingCatalog;render();};
 $('gcCreateCatalog').onclick=function(){openCatalog('selected');};
 $('gcCategoryCatalog').onclick=function(){openCatalog('category');};
+$('gcShareCategory').onclick=function(){
+ var category=$('category').value;
+ if(category)shareStoreLink('categoria',category,category);
+};
 $('ownOnly').onclick=function(){onlyOwn=!onlyOwn;this.setAttribute('aria-pressed',String(onlyOwn));filter();};
 $('promotionsOnly').onclick=function(){onlyPromos=!onlyPromos;this.setAttribute('aria-pressed',String(onlyPromos));filter();};
 $('homeSearchForm').onsubmit=function(event){
