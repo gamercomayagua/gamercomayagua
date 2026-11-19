@@ -389,14 +389,15 @@ function cartView(refresh){
  var previous=refresh===true?customerData(true):null;
  var previousScroll=previous?$('gcCartScroll')?.scrollTop||0:0;
  var previousSearch=previous?$('gcLocalSearch')?.value||'':'';
- var previousPanels=previous?['gcCustomerDetails','gcQuoteTools'].filter(function(id){return $(id)?.open;}):[];
+ var previousPanels=previous?['gcCustomerDetails','gcQuoteTools','gcPaymentCompare'].filter(function(id){return $(id)?.open;}):[];
  currentDialog='cart';
  var root=wrap(`<div class="gc-checkout"><header class="gc-cart-head"><img alt="" src="${esc(logoUrl())}"><div><h2>Mi cotización</h2><p id="gcCartCount"></p></div></header>
  <div class="gc-cart-scroll" id="gcCartScroll">
   <nav class="gc-cart-jumps" aria-label="Secciones de la cotización">
    <button class="btn outline" type="button" data-cart-target="gcDeliverySection">Envío</button>
    <button class="btn outline" type="button" data-cart-target="gcPaymentSection">Pago</button>
-   <button class="btn outline" type="button" data-cart-target="gcCustomerDetails">Datos de entrega</button>
+   <button class="btn outline" type="button" data-cart-target="gcCustomerDetails">Datos</button>
+   <button class="btn outline" type="button" data-cart-target="gcQuoteTools">PDF</button>
   </nav>
 <div class="gc-cart-layout"><div class="gc-cart-main">
 <section class="gc-section"><h3>Productos</h3><div id="gcCartItems"></div></section>
@@ -416,16 +417,20 @@ function cartView(refresh){
 <aside class="gc-cart-summary">
  <section class="gc-section" id="gcPaymentSection"><h3>Forma de pago</h3>
   <div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div>
-  <div id="gcCompare"></div><div id="gcSelectedTotal" class="gc-selected" aria-live="polite"></div>
+  <dl id="gcPriceBreakdown" class="gc-price-breakdown"></dl>
+  <p id="gcSelectedTotal" class="gc-payment-note"></p>
+  <details class="gc-cart-compare" id="gcPaymentCompare"><summary>Comparar las formas de pago</summary><div id="gcCompare"></div></details>
  </section>
  <details class="gc-section gc-cart-details" id="gcQuoteTools"><summary>Descargas y otras acciones</summary>
-  <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Descargar cotización<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparar pagos<small>Descargar comparación</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
+  <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Cotización en PDF<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparativa en PDF<small>3 formas de pago</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
  </details>
  <p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p>
 </aside></div></div>
 <footer class="gc-cart-bottom"><div><span id="gcQuickLabel">Total estimado</span><strong id="gcQuickTotal" aria-live="polite"></strong></div><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button></footer>
 </div>`);
-var itemsBox=root.querySelector('#gcCartItems'),compare=root.querySelector('#gcCompare'),total=root.querySelector('#gcSelectedTotal'),
+var itemsBox=root.querySelector('#gcCartItems'),compare=root.querySelector('#gcCompare'),
+ breakdown=root.querySelector('#gcPriceBreakdown'),paymentNote=root.querySelector('#gcSelectedTotal'),
+ whatsapp=root.querySelector('#gcWhatsapp'),
  localField=root.querySelector('#gcLocalField'),localSearch=root.querySelector('#gcLocalSearch'),localSelect=root.querySelector('#gcLocalZone'),
  localName=root.querySelector('#gcLocalName'),localPlace=root.querySelector('#gcLocalPlace'),localCost=root.querySelector('#gcLocalCost');
 function fillLocations(){
@@ -472,23 +477,52 @@ function itemRender(){
   itemsBox.innerHTML='<div class="gc-cart-empty-message"><p>Tu cotización está vacía.</p><a class="btn outline" href="#catalogo">Explorar productos</a></div>';
   itemsBox.querySelector('a').addEventListener('click',close);return;
  }
- items.forEach(function(i){var row=wrap('<div class="gc-item"><div class="gc-quote-item">'+(i.p.photo?'<img src="'+esc(i.p.photo)+'" alt="" loading="lazy">':'')+'<div><strong>'+esc(i.p.name)+'</strong><small>'+money(i.p.price)+' c/u</small></div></div><div class="gc-item-side"><b>'+money(i.p.price*i.qty)+'</b><div class="qty"><button type="button" class="gc-dec" aria-label="Disminuir cantidad">−</button><span>'+i.qty+'</span><button type="button" class="gc-inc" aria-label="Aumentar cantidad">＋</button></div></div></div>');row.querySelector('.gc-dec').onclick=function(){cart[i.p.id]=i.qty-1;if(cart[i.p.id]<=0)delete cart[i.p.id];saveCart();itemRender();totalsRender();};row.querySelector('.gc-inc').disabled=i.qty>=maxQty(i.p);row.querySelector('.gc-inc').onclick=function(){cart[i.p.id]=Math.min(maxQty(i.p),i.qty+1);saveCart();itemRender();totalsRender();};itemsBox.appendChild(row);});}
+ items.forEach(function(i,index){
+  var row=wrap(`<div class="gc-item">
+   <div class="gc-quote-item">${i.p.photo?'<img src="'+esc(i.p.photo)+'" alt="" loading="lazy">':''}<div><strong>${esc(i.p.name)}</strong><small>${money(i.p.price)} por unidad</small></div></div>
+   <div class="gc-item-side">
+    <div class="qty" role="group" aria-label="Cantidad de ${esc(i.p.name)}"><button type="button" class="gc-dec" aria-label="Disminuir cantidad">−</button><span>${i.qty}</span><button type="button" class="gc-inc" aria-label="Aumentar cantidad">+</button></div>
+    <div class="gc-line-total"><small>Importe</small><b>${money(i.p.price*i.qty)}</b></div>
+   </div>
+  </div>`);
+  function changeQty(delta,button){
+   var restoreFocus=document.activeElement===button;
+   cart[i.p.id]=Math.min(maxQty(i.p),i.qty+delta);
+   if(cart[i.p.id]<=0)delete cart[i.p.id];
+   saveCart();itemRender();totalsRender();
+   if(restoreFocus){
+    var next=itemsBox.children[Math.min(index,itemsBox.children.length-1)];
+    var target=next?.querySelector(delta>0?'.gc-inc:not(:disabled)':'.gc-dec')||next?.querySelector('.gc-dec, a');
+    target?.focus({preventScroll:true});
+   }
+  }
+  var minus=row.querySelector('.gc-dec'),plus=row.querySelector('.gc-inc');
+  minus.onclick=function(){changeQty(-1,minus);};
+  plus.disabled=i.qty>=maxQty(i.p);
+  plus.onclick=function(){changeQty(1,plus);};
+  itemsBox.appendChild(row.firstElementChild);
+ });
+}
 function totalsRender(){var items=cartItems(),q=calc(items,shippingMode);if(q.zone)localCost.textContent=q.shipping===0?'Envío gratis':money(q.shipping);
-compare.innerHTML='<div class="gc-subtotal-line"><span>Subtotal de productos</span><b>'+money(q.subtotal)+'</b></div><div class="gc-subtotal-line"><span>Envío</span><b>'+(q.shipping===null?'Elegí la zona':money(q.shipping))+'</b></div><details class="gc-cart-compare"><summary>Comparar las formas de pago</summary>'+paymentRows(q)+'</details>';
 var cod=root.querySelector('input[name=gcPayment][value=cod]');cod.disabled=!q.codAllowed;if(!q.codAllowed&&payMode==='cod')payMode='transfer';
 root.querySelector('input[name=gcPayment][value='+payMode+']').checked=true;
 var chosen=q.prices[payMode],fee=payMode==='tigo'?q.tigoFee:payMode==='cod'?q.codFee:0;
-root.querySelector('#gcQuickLabel').textContent=items.length?(payMode==='transfer'?'Total con transferencia':payMode==='tigo'?'Total con Tigo Money':'Total al recibir'):'Total estimado';
-root.querySelector('#gcQuickTotal').textContent=!items.length?money(0):chosen===null?'Elegí la zona':money(chosen);
-root.querySelector('#gcWhatsapp').disabled=!items.length;
-total.innerHTML='<div><span>Total con '+(payMode==='transfer'?'transferencia':payMode==='tigo'?'Tigo Money':'pago al recibir')+'</span><strong>'+(chosen===null?'Elegí la zona':money(chosen))+'</strong></div>'+(chosen===null?'<p>Seleccioná un destino para calcular tu envío local.</p>':payMode==='cod'?'<p>Anticipo: '+money(q.shipping+fee)+' · Saldo al recibir: '+money(q.subtotal)+'</p>':payMode==='tigo'?'<p>Incluye comisión de '+money(fee)+'</p>':'<p>Sin comisión adicional</p>');
+var needsZone=q.shipping===null;
+compare.innerHTML=paymentRows(q);
+breakdown.innerHTML='<div><dt>Subtotal de productos</dt><dd>'+money(q.subtotal)+'</dd></div><div><dt>Envío</dt><dd>'+(needsZone?'Pendiente de zona':q.shipping===0?(shippingMode==='pickup'?'Sin costo':'Gratis'):money(q.shipping))+'</dd></div><div><dt>Comisión de pago</dt><dd>'+(fee===null?'Por calcular':fee===0?'Sin comisión':money(fee))+'</dd></div>';
+paymentNote.textContent=needsZone?'Elegí tu colonia o destino para calcular el total.':payMode==='cod'?'Anticipo '+money(q.shipping+fee)+' · Saldo al recibir '+money(q.subtotal):'';
+paymentNote.hidden=!paymentNote.textContent;
+root.querySelector('#gcQuickLabel').textContent=needsZone?'Subtotal sin envío':payMode==='transfer'?'Total con transferencia':payMode==='tigo'?'Total con Tigo Money':'Total con pago al recibir';
+root.querySelector('#gcQuickTotal').textContent=money(chosen===null?q.subtotal:chosen);
+whatsapp.disabled=!items.length;
+whatsapp.textContent=needsZone?'Elegí la zona de entrega':'Continuar por WhatsApp';
 return q;}
 root.querySelectorAll('input[name=gcShipping]').forEach(function(input){input.checked=input.value===shippingMode;input.onchange=function(){shippingMode=this.value;updateDeliveryFields();totalsRender();};});
 root.querySelectorAll('input[name=gcPayment]').forEach(function(input){input.checked=input.value===payMode;input.onchange=function(){payMode=this.value;totalsRender();};});
 if(window.GC_HONDURAS)window.GC_HONDURAS.bind(root.querySelector('#customerDepartment'),root.querySelector('#customerMunicipality'));
 else {root.querySelector('#customerDepartment').outerHTML='<input id="customerDepartment" placeholder="Departamento">';root.querySelector('#customerMunicipality').outerHTML='<input id="customerMunicipality" placeholder="Municipio">';}
 root.querySelector('#gcClear').onclick=function(){cart=Object.create(null);saveCart();itemRender();totalsRender();};
-root.querySelector('#gcWhatsapp').onclick=function(){if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var items=cartItems();if(!items.length){toast('Primero agregá productos al carrito');return;}var q=totalsRender();if(shippingMode==='local'&&!q.zone){toast('Elegí la colonia o destino para calcular el envío');localSelect.focus();return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
+whatsapp.onclick=function(){var items=cartItems();if(!items.length)return;var q=totalsRender();if(shippingMode==='local'&&!q.zone){localSelect.focus();return;}if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
 function openQuote(comparative){
  if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}
  var items=cartItems();
@@ -504,7 +538,7 @@ root.querySelectorAll('[data-cart-target]').forEach(function(button){
  button.onclick=function(){
   var target=root.querySelector('#'+button.dataset.cartTarget);
   if(target.tagName==='DETAILS')target.open=true;
-  target.scrollIntoView({block:'start',behavior:'smooth'});
+  target.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
  };
 });
 itemRender();totalsRender();open(root,'cart');
