@@ -6,6 +6,7 @@ var PHONE='50431517755';
 var CONFIG={shipping:110,tigo:0.10,cod:0.15,codMin:350};
 var catalogReady=false;
 var incomingLink=new URLSearchParams(location.search);
+var catalogRevision=new URL(document.currentScript.src).search;
 var requestedProduct=incomingLink.get('producto'),requestedCategory=incomingLink.get('categoria');
 var sharePages;
 var store={cod:null,watermark:window.GC_BOOT_WATERMARK},selectedCatalog=new Set(),selectingCatalog=false,onlyPromos=false,onlyOwn=false,all=[],listed=[],offset=24,cart=Object.create(null),shippingMode='national',localZone='',payMode='transfer',currentDialog='';
@@ -218,7 +219,7 @@ function applyLogo(){
  if(url)target.src=url;
 }
 async function shareStoreLink(type,key,title){
- sharePages=sharePages||fetch('data/enlaces.json').then(function(response){
+ sharePages=sharePages||fetch('data/enlaces.json'+catalogRevision).then(function(response){
   if(!response.ok)throw new Error('Enlaces no disponibles');
   return response.json();
  }).catch(function(){sharePages=null;return {};});
@@ -658,7 +659,7 @@ async function init(){
  var url=catalogUrl(),first=url?jsonp(url,{offset:'0',limit:'400'}):null;
  if(first)first.then(function(data){if(data.ok)updateStore(data.store);},function(){});
  var supplierLive=first?fetchLive(url,first).then(function(rows){return rows;},function(){return null;}):Promise.resolve(null);
- var ownSnapshot=fetch('data/productos-propios.json').then(function(response){
+ var ownSnapshot=fetch('data/productos-propios.json'+catalogRevision).then(function(response){
   if(!response.ok)throw Error('Copia de productos propios no disponible');
   return response.json();
  }).then(function(data){
