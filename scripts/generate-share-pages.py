@@ -81,7 +81,9 @@ def products():
         if product.get("active") is not True or not product.get("name") or not re.fullmatch(r"[A-Za-z0-9_-]{1,43}", product_id):
             continue
         thumbnail = f"assets/vistas-previas/{product_id}.jpg"
-        photo = urljoin(SITE, thumbnail) if (ROOT / thumbnail).is_file() else image_url(product.get("image"))
+        photo = image_url(product.get("image"))
+        if not product.get("publishedByStore") and (ROOT / thumbnail).is_file():
+            photo = urljoin(SITE, thumbnail)
         rows["propio-" + product_id] = (product["name"], product.get("category", ""), photo)
     return rows
 

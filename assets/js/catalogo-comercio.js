@@ -623,14 +623,14 @@ function ownProducts(rows,mirrors){
   var regular=integer(p.price),offer=integer(p.promoPrice),discounted=offer!==null&&offer<regular;
   return [{id:'propio-'+p.id,ref:p.code||p.id,own:true,code:p.code,name:p.name,category:p.category,
    price:discounted?offer:regular,regularPrice:discounted?regular:null,promotion:discounted||Boolean(p.promoText),
-   photo:ownPhoto(p,mirrors),stock:p.stock,description:p.description,cod:p.codAllowed===true}];
+   photo:ownPhoto(p,mirrors),stock:p.stock,description:p.description,cod:p.codAllowed===true,freeShipping:p.freeShipping===true}];
  }));
 }
 function catalogKey(p){return p.code?compact(p.code)+'|'+norm(p.name):'';}
 async function init(){
  try{var local=JSON.parse(localStorage.getItem('gc-mark-config')||'null');if(local)store=Object.assign({},store,local);}catch(error){}
  applyLogo();
- var supplier=[],own=[],mirrors={},ownLive=false;
+ var supplier=[],own=[],mirrors={},publishedOwn=[];
  function updateCatalog(){
   var ownKeys=new Set(own.map(catalogKey).filter(Boolean));
   all=own.concat(supplier.filter(function(p){return !ownKeys.has(catalogKey(p));}));
@@ -663,7 +663,8 @@ async function init(){
   return response.json();
  }).then(function(data){
   mirrors=data.mirrors||{};
-  if(!ownLive){own=ownProducts(data.products,mirrors);updateCatalog();}
+  publishedOwn=data.products.filter(function(p){return p.publishedByStore===true;});
+  own=ownProducts(data.products,mirrors);updateCatalog();
  }).catch(console.error);
  var controller=new AbortController();
  var timeout=setTimeout(function(){controller.abort();},15000);
@@ -673,7 +674,12 @@ async function init(){
  }).then(async function(data){
   if(!data.ok||data.catalogSchemaVersion!==2||!Array.isArray(data.products))throw Error('Catálogo propio inválido');
   await ownSnapshot;
-  own=ownProducts(data.products,mirrors);ownLive=true;updateCatalog();
+  var current=new Map(data.products.map(function(p){return [p.id,p];}));
+  publishedOwn.forEach(function(p){
+   var live=current.get(p.id);
+   current.set(p.id,live?Object.assign({},p,{stock:live.stock,active:live.active,codAllowed:live.codAllowed}):p);
+  });
+  own=ownProducts(Array.from(current.values()),mirrors);updateCatalog();
  }).catch(function(){}).finally(function(){clearTimeout(timeout);});
  var supplierSnapshot=fetchStatic().then(function(rows){
   supplier=prepare(rows);updateCatalog();
