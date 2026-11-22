@@ -324,7 +324,8 @@ function detail(p){
  var q=calc([{p:p,qty:1}],'national');
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'<p class="gc-detail-ref">Código: '+esc(p.code||'No indicado')+' · Ref. '+esc(p.ref)+'</p></div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+description+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><details class="gc-detail-more"><summary>Consultar envíos y formas de pago</summary>'+paymentRows(q)+'</details></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></div>');
+ var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Detalles, pagos y opciones para compartir</summary>'+reference+description+paymentRows(q)+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  var img=box.querySelector('.gc-product-image');if(img)img.onerror=function(){img.replaceWith(document.createTextNode('Imagen no disponible'));};
  if(p.soldOut)box.classList.add('gc-soldout-detail');
@@ -333,7 +334,7 @@ function detail(p){
  box.querySelector('.gc-share-ficha').onclick=function(){openCatalog('product',p);};
  var share=wrap('<button type="button" class="btn outline gc-share-link">Compartir enlace</button>').firstElementChild;
  share.onclick=function(){shareStoreLink('producto',p.id,p.name);};
- box.querySelector('.gc-detail-actions').appendChild(share);
+ box.querySelector('.gc-detail-extra .gc-detail-actions').appendChild(share);
  open(box,'product');
 }
 function cartItems(){return Object.keys(cart).map(function(id){var p=all.find(function(x){return x.id===id;}),qty=p?Math.min(cart[id],maxQty(p)):0;return p&&!p.soldOut&&p.price!==null?{p:p,qty:qty}:null;}).filter(Boolean);}

@@ -552,3 +552,22 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
  #dialog[data-view=product] #dialogBody{max-height:calc(100dvh - 16px);padding-inline:10px}
  .gc-item-side{gap:6px}
 }
+
+.gc-detail-extra{margin-top:12px}
+.gc-detail-extra>p{font-size:.84rem;color:#53647d;overflow-wrap:anywhere}
+@media(max-width:650px){
+ .gc-detail-image{width:100%;height:clamp(155px,38dvh,340px);aspect-ratio:auto}
+ .gc-detail-head{padding:9px 0 0}
+ .gc-detail-head h2{margin:0 0 5px}
+ .gc-detail-info{margin:4px 0 7px}
+ .gc-detail-info .gc-stock-line{margin:4px 0}
+ .gc-detail-actions{gap:6px;padding-top:4px}
+ .gc-detail-actions .btn{min-height:44px}
+ .gc-cart-jumps{gap:3px;padding-block:4px;border-bottom:1px solid #e5ebf4}
+ .gc-cart-jumps .btn{background:transparent;border-color:transparent}
+ .gc-cart-scroll{scroll-padding-top:58px}
+ .gc-checkout .gc-ship-choices{gap:4px}
+ .gc-checkout .gc-ship-choices label{align-items:center;padding:6px 8px}
+ .gc-checkout .gc-ship-choices label span{line-height:1.2}
+ .gc-checkout .gc-ship-choices small{margin-top:2px}
+}
