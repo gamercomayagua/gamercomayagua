@@ -525,3 +525,30 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
  #ownOnly{min-height:44px;padding-inline:10px}
  .gc-catalog-options summary{min-height:36px}
 }
+
+/* Keep the product close control outside the scrolling content. */
+#dialog[data-view=product] .dialogbox{padding:0;overflow:hidden}
+#dialog[data-view=product] #dialogBody{max-height:min(92dvh,900px);overflow:auto;overscroll-behavior:contain;padding:54px 16px 16px}
+#dialog[data-view=product] .close{z-index:5;top:6px;right:10px;width:44px;height:44px;display:grid;place-items:center;color:#172642;background:#e9eff8;font-size:1.35rem}
+.gc-remove-item{display:grid;place-items:center;min-width:44px;min-height:44px;padding:0;border:1px solid #efccd4;border-radius:9px;background:#fff3f5;color:#a51e3a;font-size:1.08rem}
+.gc-remove-item span{font-variant-emoji:text}
+.gc-item-side .gc-line-total{margin-left:auto}
+#catalogo .searchpanel{grid-template-columns:minmax(0,1fr);gap:5px;padding:8px}
+.gc-search-filters summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 8px;cursor:pointer;color:#415775;font-size:.82rem;font-weight:750;list-style:none}
+.gc-search-filters summary::before{content:"▸"}
+.gc-search-filters[open] summary::before{content:"▾"}
+.gc-search-filter-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 4px 4px}
+.gc-search-filter-fields select{min-width:0}
+.gc-search-filter-fields button{justify-self:start}
+.gc-mobile-combos{display:none}
+@media(max-width:650px){
+ .hero.gc-store-hero{display:none}
+ .gc-catalog-modes{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px}
+ .gc-catalog-modes button,#promotionsOnly,.gc-mobile-combos{padding-inline:4px;font-size:.8rem}
+ .gc-mobile-combos{display:grid;place-items:center;min-height:44px;color:#344762;font-weight:750}
+ #catalogo .resultshead{margin:9px 0 5px}
+ .gc-catalog-options{margin-bottom:6px}
+ #dialog[data-view=product] .dialogbox{max-height:calc(100dvh - 16px)}
+ #dialog[data-view=product] #dialogBody{max-height:calc(100dvh - 16px);padding-inline:10px}
+ .gc-item-side{gap:6px}
+}

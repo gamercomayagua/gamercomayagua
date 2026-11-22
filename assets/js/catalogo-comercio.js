@@ -288,8 +288,9 @@ function render(){
  });root.appendChild(fragment);$('more').style.display=offset<listed.length?'block':'none';updateCatalogControls();
 }
 function open(node,kind){
- var dialog=$('dialog');
- $('dialogBody').replaceChildren(node);
+ var dialog=$('dialog'),body=$('dialogBody');
+ body.replaceChildren(node);
+ if(kind==='product')body.scrollTop=0;
  dialog.dataset.view=kind;
  if(kind==='combo')dialog.setAttribute('aria-labelledby','comboDetailTitle');
  else dialog.removeAttribute('aria-labelledby');
@@ -510,23 +511,26 @@ function itemRender(){
    <div class="gc-item-side">
     <div class="qty" role="group" aria-label="Cantidad de ${esc(i.p.name)}"><button type="button" class="gc-dec" aria-label="Disminuir cantidad">−</button><span>${i.qty}</span><button type="button" class="gc-inc" aria-label="Aumentar cantidad">+</button></div>
     <div class="gc-line-total"><small>Importe</small><b>${money(i.p.price*i.qty)}</b></div>
+    <button type="button" class="gc-remove-item" aria-label="Quitar ${esc(i.p.name)}" title="Quitar producto"><span aria-hidden="true">🗑</span></button>
    </div>
   </div>`);
-  function changeQty(delta,button){
+  function changeQty(quantity,button){
    var restoreFocus=document.activeElement===button;
-   cart[i.p.id]=Math.min(maxQty(i.p),i.qty+delta);
+   cart[i.p.id]=Math.min(maxQty(i.p),quantity);
    if(cart[i.p.id]<=0)delete cart[i.p.id];
    saveCart();itemRender();totalsRender();
    if(restoreFocus){
     var next=itemsBox.children[Math.min(index,itemsBox.children.length-1)];
-    var target=next?.querySelector(delta>0?'.gc-inc:not(:disabled)':'.gc-dec')||next?.querySelector('.gc-dec, a');
+    var target=next?.querySelector('.'+button.className+':not(:disabled)')||next?.querySelector('.gc-dec, a');
     target?.focus({preventScroll:true});
    }
   }
   var minus=row.querySelector('.gc-dec'),plus=row.querySelector('.gc-inc');
-  minus.onclick=function(){changeQty(-1,minus);};
+  minus.onclick=function(){changeQty(i.qty-1,minus);};
   plus.disabled=i.qty>=maxQty(i.p);
-  plus.onclick=function(){changeQty(1,plus);};
+  plus.onclick=function(){changeQty(i.qty+1,plus);};
+  var remove=row.querySelector('.gc-remove-item');
+  remove.onclick=function(){changeQty(0,remove);};
   itemsBox.appendChild(row.firstElementChild);
  });
 }
