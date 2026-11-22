@@ -270,7 +270,7 @@ function updateCatalogControls(){
 }
 function render(){
  var root=$('products');root.replaceChildren();$('resultCount').textContent=listed.length.toLocaleString('es-HN')+' productos';
- if(!listed.length)root.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No hay coincidencias</h3><p>Probá otra palabra o código.</p></div>';
+ if(!listed.length)root.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>'+(onlyPromos?'No hay promociones para estos filtros':'No hay coincidencias')+'</h3><p>Probá otra búsqueda o cambiá los filtros.</p></div>';
  var fragment=document.createDocumentFragment();
  listed.slice(0,offset).forEach(function(p){
  var card=document.createElement('article');card.className='product'+(p.soldOut?' gc-soldout':'');
@@ -716,19 +716,21 @@ $('gcShareCategory').onclick=function(){
  if(category)shareStoreLink('categoria',category,category);
 };
 $('ownOnly').onclick=function(){onlyOwn=!onlyOwn;this.setAttribute('aria-pressed',String(onlyOwn));filter();};
-$('promotionsOnly').onclick=function(){onlyPromos=!onlyPromos;this.setAttribute('aria-pressed',String(onlyPromos));filter();};
-$('homeSearchForm').onsubmit=function(event){
+function setPromotionView(active){
+ onlyPromos=active;
+ $('allProducts').setAttribute('aria-pressed',String(!active));
+ $('promotionsOnly').setAttribute('aria-pressed',String(active));
+ $('resultsTitle').textContent=active?'Promociones':'Productos';
+ filter();
+}
+$('allProducts').onclick=function(){setPromotionView(false);};
+$('promotionsOnly').onclick=function(){setPromotionView(true);};
+$('catalogSearchForm').onsubmit=function(event){
  event.preventDefault();
- $('search').value=$('homeSearch').value.trim();
- $('category').value='';
- onlyOwn=false;onlyPromos=false;
- $('ownOnly').setAttribute('aria-pressed','false');
- $('promotionsOnly').setAttribute('aria-pressed','false');
- $('homeSearch').blur();filter();
- if(location.hash!=='#catalogo')location.hash='catalogo';
- else $('catalogo').scrollIntoView({block:'start'});
+ $('search').blur();
+ filter();
 };
-$('search').addEventListener('input',function(event){$('homeSearch').value=this.value;filter(event);});$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
+$('search').addEventListener('input',filter);$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
 $('cartFloat').onclick=cartView;$('cartTop').onclick=cartView;$('closeDialog').onclick=close;$('dialog').onclick=function(event){if(event.target===$('dialog'))close();};document.addEventListener('keydown',function(event){if(event.key==='Escape')close();});
 if(window.GC_MARKS)window.GC_MARKS.applyStyles();
 readCart();renderCounts();renderCombos();init();

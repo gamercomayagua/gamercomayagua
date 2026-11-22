@@ -496,3 +496,32 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
  .gc-combo-filters{background:transparent;padding:0;border:0}
  .gc-combo-head select{background:#fff}
 }
+
+/* Search and promotions share one catalog, ahead of the combos. */
+.gc-store-hero .container{grid-template-columns:minmax(0,1fr) auto}
+#catalogo .searchpanel{margin-top:16px;box-shadow:none}
+.gc-catalog-search{display:flex;align-items:center;gap:6px;min-width:0;padding:3px 4px 3px 10px;border:1px solid #ced9ea;border-radius:12px;background:#f8faff}
+.gc-catalog-search:focus-within{outline:2px solid #5877ba;outline-offset:2px}
+.gc-catalog-search input{min-width:0;width:100%;border:0;outline:0;padding:6px 0;background:transparent;color:#152642;font-size:16px}
+.gc-catalog-search .btn{min-height:44px;padding-inline:14px}
+.gc-catalog-modes{display:flex;gap:4px;margin-top:12px;padding:4px;width:max-content;max-width:100%;border:1px solid #dbe4f0;border-radius:12px;background:#fff}
+.gc-catalog-modes button,#promotionsOnly{min-height:44px;padding:7px 16px;border:1px solid transparent;border-radius:8px;background:transparent;color:#344762;font-size:.9rem;font-weight:750}
+.gc-catalog-modes #allProducts[aria-pressed=true]{background:#152642;color:white}
+#promotionsOnly{color:#9e1b33}
+#catalogo .resultshead{margin-top:13px}
+.gc-catalog-options{margin-bottom:12px;color:#475d7d;font-size:.79rem}
+.gc-catalog-options summary{width:max-content;max-width:100%;padding:8px 0;cursor:pointer;font-weight:650}
+.gc-catalog-options .gc-catalog-tools{margin:3px 0 0}
+@media(max-width:650px){
+ .gc-store-hero .container{gap:8px}
+ .gc-store-hero .gc-hero-actions{display:flex}
+ .gc-store-hero .gc-hero-actions .btn{min-height:44px;padding:6px 12px}
+ .gc-catalog-search{grid-column:1/-1}
+ #catalogo .searchpanel{margin-top:10px}
+ .gc-catalog-modes{display:grid;grid-template-columns:1fr 1fr;width:100%}
+ #catalogo .resultshead{flex-direction:row;align-items:center}
+ #catalogo .gc-results-options{width:auto;justify-content:flex-end}
+ #catalogo .gc-results-options .status{display:none}
+ #ownOnly{min-height:44px;padding-inline:10px}
+ .gc-catalog-options summary{min-height:36px}
+}
