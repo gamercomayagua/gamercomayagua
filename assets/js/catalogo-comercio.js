@@ -28,7 +28,7 @@ function prepare(list){return (Array.isArray(list)?list:[]).filter(function(p){r
  var stock=p.stock===null||p.stock===undefined||p.stock===''?null:Number(p.stock);
  stock=Number.isInteger(stock)&&stock>=0?stock:null;
  var soldOut=p.soldOut===true||p.status==='AGOTADO'||(stock!==null&&stock<(p.own?1:4));
- return {id:String(p.id),ref:String(p.ref||p.id),own:p.own===true,name:String(p.name),price:integer(p.price),regularPrice:integer(p.regularPrice),discount:Number(p.discount)||0,promotion:p.promotion===true||integer(p.regularPrice)>integer(p.price),cod:p.cod!==false,sku:String(p.sku||''),code:String(p.code||''),category:String(p.category||''),subcategory:String(p.subcategory||''),description:String(p.description||''),photo:cleanUrl(p.photo),freeShipping:p.freeShipping===true||p.freeShipping==='SI',soldOut:soldOut,stock:stock,stockVerifiedAt:p.stockVerifiedAt?String(p.stockVerifiedAt):null};
+ return {id:String(p.id),ref:String(p.ref||p.id),own:p.own===true,name:String(p.name),price:integer(p.price),regularPrice:integer(p.regularPrice),discount:Number(p.discount)||0,promotion:p.promotion===true||integer(p.regularPrice)>integer(p.price),cod:p.cod!==false,sku:String(p.sku||''),code:String(p.code||''),category:String(p.category||''),subcategory:String(p.subcategory||''),description:String(p.description||''),photo:cleanUrl(p.photo),photoFallback:cleanUrl(p.photoFallback),freeShipping:p.freeShipping===true||p.freeShipping==='SI',soldOut:soldOut,stock:stock,stockVerifiedAt:p.stockVerifiedAt?String(p.stockVerifiedAt):null};
 });}
 function stockText(p){
  if(p.soldOut)return 'AGOTADO · No disponible';
@@ -240,7 +240,18 @@ async function shareStoreLink(type,key,title){
 function watermarkMarkup(surface){
  var wm=store.watermark;
  if(!wm||wm[surface]===false||!window.GC_MARKS)return '';
- return window.GC_MARKS.markup(wm,logoUrl());
+ return window.GC_MARKS.markup(surface==='photos'?{...wm,opacity:Math.min(wm.opacity??15,9)}:wm,logoUrl());
+}
+function handlePhotoError(img,p){
+ if(!img)return;
+ var fallback=p.photoFallback||window.GC_EXPORT?.exportPhotoUrl(p.photo);
+ img.onerror=function(){
+  if(fallback&&img.src!==fallback){img.src=fallback;return;}
+  var photo=img.parentElement;
+  photo.querySelector('.gc-watermark')?.remove();
+  var placeholder=Object.assign(document.createElement('span'),{className:'noimg',textContent:'Foto no disponible'});
+  img.replaceWith(placeholder);
+ };
 }
 function photoMarkup(p){return p.photo?'<img class="gc-product-image" loading="lazy" decoding="async" alt="'+esc(p.name)+'" src="'+esc(p.photo)+'">'+watermarkMarkup('photos'):'<span class="noimg">📦<br>Imagen no disponible</span>';}
 function promoBadge(p){
@@ -293,10 +304,24 @@ if(sort==='name')listed.sort(function(a,b){return a.name.localeCompare(b.name,'e
 if(sort==='priceup')listed.sort(function(a,b){return(a.price===null?Infinity:a.price)-(b.price===null?Infinity:b.price);});
 if(sort==='pricedown')listed.sort(function(a,b){return(b.price===null?-1:b.price)-(a.price===null?-1:a.price);});
 $('categoryLabel').textContent=cat||'Todas las categorías';
-var filters=[cat,sort==='default'?'':$('sort').selectedOptions[0]?.textContent,onlyOwn?'Productos propios':'',onlyAvailable?'En stock confirmado':''].filter(Boolean);
+var filters=[
+ [cat,function(){$('category').value='';}],
+ [sort==='default'?'':$('sort').selectedOptions[0]?.textContent,function(){$('sort').value='default';}],
+ [onlyOwn?'Productos propios':'',function(){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}],
+ [onlyAvailable?'En stock confirmado':'',function(){onlyAvailable=false;$('inStockOnly').checked=false;}]
+].filter(function(entry){return entry[0];});
 $('clearSearch').hidden=!$('search').value;
 $('activeFilters').hidden=!filters.length;
-$('activeFilterSummary').textContent=filters.join(' · ');
+$('activeFilterSummary').replaceChildren(...filters.map(function([label,remove]){
+ var chip=document.createElement('button');
+ chip.type='button';chip.className='gc-filter-chip';
+ chip.textContent=label+' ×';chip.setAttribute('aria-label','Quitar filtro: '+label);
+ chip.onclick=function(){
+  remove();filter();
+  ($('activeFilterSummary').firstElementChild||document.querySelector('.gc-search-filters summary')).focus({preventScroll:true});
+ };
+ return chip;
+}));
 if(reset!==false)offset=24;render();}
 function updateCatalogControls(){
  $('gcSelectCatalog').setAttribute('aria-pressed',String(selectingCatalog));
@@ -325,11 +350,7 @@ function render(){
  var img=card.querySelector('.gc-product-image');
  if(img){
   if(index<2){img.loading='eager';if(index===0)img.fetchPriority='high';}
-  img.onerror=function(){
-   var photo=img.parentElement;
-   var placeholder=Object.assign(document.createElement('span'),{className:'noimg',textContent:'Imagen no disponible'});
-   photo.replaceChildren(...Array.from(photo.children).filter(function(child){return child.matches('.tag,.gc-sold-badge,.gc-free-badge');}),placeholder);
-  };
+  handlePhotoError(img,p);
  }
  card.querySelectorAll('.gc-open-product').forEach(function(item){item.onclick=function(){detail(p);};item.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();detail(p);}};});
  card.querySelector('.add').onclick=function(){add(p);};fragment.appendChild(card);
@@ -392,7 +413,7 @@ function detail(p){
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
  var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
- var img=box.querySelector('.gc-product-image');if(img)img.onerror=function(){img.replaceWith(document.createTextNode('Imagen no disponible'));};
+ handlePhotoError(box.querySelector('.gc-product-image'),p);
  if(p.soldOut)box.classList.add('gc-soldout-detail');
  box.querySelector('.gc-add').onclick=function(){add(p);};
  box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.ref+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
@@ -420,7 +441,8 @@ function deliveryLabel(q){
  if(shippingMode==='local')return (q.zone?'Entrega local: '+q.zone.name:'Entrega local: destino pendiente')+(q.free&&q.shipping===0?' (envío gratis)':'');
  return q.free?'Envío nacional gratis':'Envío nacional';
 }
-function buildMessage(items,q,customer){var paymentNames={transfer:'Transferencia / depósito',tigo:'Tigo Money',cod:'Pagar al recibir'};
+var paymentNames={transfer:'Transferencia / depósito',tigo:'Tigo Money',cod:'Pagar al recibir'};
+function buildMessage(items,q,customer){
 var lines=['*GAMER COMAYAGUA*','*SOLICITUD DE COTIZACIÓN*','','*PRODUCTOS*'];
 items.forEach(function(i){lines.push('• '+i.qty+' × '+i.p.name+' — '+money(i.p.price*i.qty));});
 lines.push('','Subtotal: '+money(q.subtotal),'Entrega: '+deliveryLabel(q),'Envío: '+(q.shipping===null?'PENDIENTE DE CONFIRMAR':money(q.shipping)),'Método de pago: '+paymentNames[payMode]);
@@ -508,6 +530,7 @@ function cartView(refresh){
    <button class="btn outline" type="button" data-cart-target="gcPaymentSection">Pago</button>
    <button class="btn outline" type="button" data-cart-target="gcCustomerDetails">Datos</button>
    <button class="btn outline" type="button" data-cart-target="gcQuoteTools">PDF</button>
+   <button class="btn outline" type="button" data-cart-target="gcReviewSection">Revisar</button>
   </nav>
 <div class="gc-cart-layout"><div class="gc-cart-main">
 <section class="gc-section" id="gcItemsSection"><h3>Productos</h3><div class="gc-cart-undo" id="gcCartUndo" hidden><span role="status">Producto quitado</span><button type="button" class="btn outline">Deshacer</button></div><div id="gcCartItems"></div></section>
@@ -533,6 +556,11 @@ function cartView(refresh){
  </section>
  <section class="gc-section" id="gcQuoteTools"><h3>PDF y otras acciones</h3>
   <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Cotización en PDF<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparativa en PDF<small>3 formas de pago</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
+ </section>
+ <section class="gc-section" id="gcReviewSection" hidden>
+  <h3>Revisá tu cotización</h3>
+  <div class="gc-review-context" id="gcReviewContext"></div>
+  <dl class="gc-price-breakdown" id="gcReviewBreakdown"></dl>
  </section>
  <p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p>
 </aside></div></div>
@@ -636,19 +664,23 @@ var chosen=q.prices[payMode],fee=payMode==='cod'?q.codFee:0;
 var needsZone=q.shipping===null;
 compare.innerHTML=paymentRows(q);
 breakdown.innerHTML='<div><dt>Subtotal de productos</dt><dd>'+money(q.subtotal)+'</dd></div><div><dt>Envío</dt><dd>'+(needsZone?'Pendiente de zona':q.shipping===0?(shippingMode==='pickup'?'Sin costo':'Gratis'):money(q.shipping))+'</dd></div>'+(payMode==='tigo'?'<div><dt>'+tigoFeeLabel+'</dt><dd>'+tigoFeeAmount(q)+'</dd></div>':'<div><dt>Comisión de pago</dt><dd>'+(fee===null?'Por calcular':fee===0?'Sin comisión':money(fee))+'</dd></div>');
+var review=root.querySelector('#gcReviewBreakdown');
+review.innerHTML=breakdown.innerHTML+'<div class="gc-review-total"><dt>Total</dt><dd>'+paymentAmount(chosen,payMode)+'</dd></div>';
+if(payMode==='cod'&&chosen!==null)review.insertAdjacentHTML('beforeend','<div><dt>Anticipo</dt><dd>'+money(q.shipping+fee)+'</dd></div><div><dt>Saldo al recibir</dt><dd>'+money(q.subtotal)+'</dd></div>');
+root.querySelector('#gcReviewContext').textContent=deliveryLabel(q)+' · '+paymentNames[payMode];
 paymentNote.textContent=needsZone?'Elegí tu colonia o destino para calcular el total.':payMode==='cod'?'Anticipo '+money(q.shipping+fee)+' · Saldo al recibir '+money(q.subtotal):'';
 paymentNote.hidden=!paymentNote.textContent;
 root.querySelector('#gcQuickLabel').textContent=needsZone?'Subtotal sin envío':payMode==='transfer'?'Total con transferencia':payMode==='tigo'?'Total con Tigo Money':'Total con pago al recibir';
 root.querySelector('#gcQuickTotal').textContent=chosen===null?money(q.subtotal):paymentAmount(chosen,payMode);
 whatsapp.disabled=!items.length;
-whatsapp.textContent=needsZone?'Elegir zona de entrega':nextSteps[activeTab]?.label||'Continuar por WhatsApp';
+whatsapp.textContent=needsZone?'Elegir zona de entrega':nextSteps[activeTab]?.label||(activeTab==='gcReviewSection'?'Continuar por WhatsApp':'Revisar cotización');
 return q;}
 root.querySelectorAll('input[name=gcShipping]').forEach(function(input){input.checked=input.value===shippingMode;input.onchange=function(){shippingMode=this.value;updateDeliveryFields();totalsRender();};});
 root.querySelectorAll('input[name=gcPayment]').forEach(function(input){input.checked=input.value===payMode;input.onchange=function(){payMode=this.value;totalsRender();};});
 if(window.GC_HONDURAS)window.GC_HONDURAS.bind(root.querySelector('#customerDepartment'),root.querySelector('#customerMunicipality'));
 else {root.querySelector('#customerDepartment').outerHTML='<input id="customerDepartment" placeholder="Departamento">';root.querySelector('#customerMunicipality').outerHTML='<input id="customerMunicipality" placeholder="Municipio">';}
 root.querySelector('#gcClear').onclick=function(){if(!cartItems().length||!window.confirm('¿Vaciar todos los productos de la cotización?'))return;cartView.removed=removed=null;cart=Object.create(null);saveCart();itemRender();totalsRender();};
-whatsapp.onclick=function(){var items=cartItems();if(!items.length)return;var q=totalsRender();if(shippingMode==='local'&&!q.zone){showCartTab('gcDeliverySection');localSelect.focus();return;}if(nextSteps[activeTab]){showCartTab(nextSteps[activeTab].id);return;}if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
+whatsapp.onclick=function(){var items=cartItems();if(!items.length)return;var q=totalsRender();if(shippingMode==='local'&&!q.zone){showCartTab('gcDeliverySection');localSelect.focus();return;}if(activeTab!=='gcReviewSection'){showCartTab(nextSteps[activeTab]?.id||'gcReviewSection');return;}if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
 function openQuote(comparative){
  if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}
  var items=cartItems();
@@ -665,7 +697,8 @@ var activeTab=previousTab||'gcItemsSection';
 var nextSteps={
  gcItemsSection:{id:'gcDeliverySection',label:'Elegir envío'},
  gcDeliverySection:{id:'gcPaymentSection',label:'Elegir pago'},
- gcPaymentSection:{id:'gcCustomerDetails',label:'Datos de entrega'}
+ gcPaymentSection:{id:'gcCustomerDetails',label:'Datos de entrega'},
+ gcCustomerDetails:{id:'gcReviewSection',label:'Revisar cotización'}
 };
 function showCartTab(id){
  activeTab=id;
@@ -737,7 +770,7 @@ function ownProducts(rows,mirrors){
   var regular=integer(p.price),offer=integer(p.promoPrice),discounted=offer!==null&&offer<regular;
   return [{id:'propio-'+p.id,ref:p.code||p.id,own:true,code:p.code,name:p.name,category:p.category,
    price:discounted?offer:regular,regularPrice:discounted?regular:null,promotion:discounted||Boolean(p.promoText),
-   photo:ownPhoto(p,mirrors),stock:p.stock,description:p.description,cod:p.codAllowed===true,freeShipping:p.freeShipping===true}];
+   photo:ownPhoto(p,mirrors),photoFallback:mirrors[p.id]?.source===p.image?cleanUrl(p.image):'',stock:p.stock,description:p.description,cod:p.codAllowed===true,freeShipping:p.freeShipping===true}];
  }));
 }
 function catalogKey(p){return p.code?compact(p.code)+'|'+norm(p.name):'';}

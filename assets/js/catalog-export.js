@@ -111,7 +111,7 @@ function stockLabel(product,stockText){
 async function drawPage(options,items,index,total){
  const {title,prices,logo,watermark,phone,money,stockText}=options;
  const [brand,marks,photos]=await Promise.all([
-  loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo)))
+  loadImage(logo),markAssets(watermark,logo),Promise.all(items.map(product=>productImage(product.photo).then(photo=>photo||productImage(product.photoFallback))))
  ]);
  const width=1200,margin=48,gap=24,top=228;
  const cols=items.length===1?1:items.length===3||items.length>6?3:2;
@@ -364,5 +364,5 @@ async function downloadProduct(product,options){
   setTimeout(()=>URL.revokeObjectURL(url),30000);
  }finally{canvas.width=canvas.height=1;}
 }
-window.GC_EXPORT={open,downloadProduct};
+window.GC_EXPORT={open,downloadProduct,exportPhotoUrl};
 })();
