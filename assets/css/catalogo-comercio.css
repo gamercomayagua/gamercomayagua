@@ -792,3 +792,25 @@ body{
  .gc-product-payments .gc-payrow{padding:10px 12px}
  .gc-checkout .gc-cart-jumps{gap:8px;padding-inline:16px}
 }
+
+.gc-payrow.gc-payrow-tigo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+}
+.gc-payrow-tigo > b { text-align: right; }
+.gc-payrow-tigo .gc-tigo-fee {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #dde5f0;
+  color: #495b75;
+  font-size: .75rem;
+}
+.gc-tigo-fee strong, #gcPriceBreakdown dd, .gc-payrow b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
