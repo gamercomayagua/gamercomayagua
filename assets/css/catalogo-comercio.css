@@ -571,3 +571,66 @@ button.gc-combo-photos{position:relative;border:0;width:100%;text-align:left}
  .gc-checkout .gc-ship-choices label span{line-height:1.2}
  .gc-checkout .gc-ship-choices small{margin-top:2px}
 }
+
+/* Translucent navigation and quiet surfaces in the store's existing palette. */
+body{
+ background:radial-gradient(ellipse 46rem 23rem at 10% 0%,#fff 0%,transparent 100%),var(--bg);
+}
+.top{
+ background:#fff;
+ border-bottom:1px solid #dce5f0;
+ box-shadow:0 3px 16px #101d3a09;
+}
+.hero.gc-store-hero{background:transparent}
+.top .navbtn,.gc-catalog-search,.gc-catalog-modes{border-radius:15px}
+#catalogo .searchpanel{
+ border-radius:18px;
+ box-shadow:0 4px 16px #101d3a08,inset 0 1px 0 #fff;
+}
+.gc-catalog-search{background:#f3f5fa;border-color:#dce5f0}
+.gc-catalog-modes{background:#f3f5fa}
+.gc-catalog-modes button,.gc-mobile-combos{border-radius:11px}
+.gc-catalog-modes #allProducts[aria-pressed=true],#promotionsOnly[aria-pressed=true]{
+ box-shadow:0 2px 6px #101d3a23;
+}
+.product,.gc-combo-card{
+ border-radius:17px;
+ box-shadow:0 4px 16px #101d3a08;
+}
+.product .photo{background:#f3f5fa}
+.product .tag{background:#fff;border-radius:20px}
+.product .gc-product-action .btn,.gc-detail-actions .btn,.gc-cart-bottom .btn{border-radius:12px}
+#dialog .dialogbox{box-shadow:0 24px 64px #08112345}
+#dialog[data-view=product] .dialogbox{background:#fff}
+#dialog[data-view=product] .close{
+ background:#fff;
+ border:1px solid #dce5f0;
+ border-radius:50%;
+ box-shadow:0 2px 10px #101d3a14;
+}
+.gc-cart-bottom{border-top-color:#dce5f0;box-shadow:0 -6px 20px #101d3a0d}
+.top :focus-visible,#catalogo :focus-visible,#dialog :focus-visible{
+ outline:2px solid #4267c5;
+ outline-offset:2px;
+}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+ .top{
+  background:#ffffffed;
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+ }
+ #dialog.open{
+  background:#08112382;
+  -webkit-backdrop-filter:blur(5px);
+  backdrop-filter:blur(5px);
+ }
+}
+@media(max-width:650px){
+ .product,.gc-combo-card{border-radius:14px}
+ #catalogo .searchpanel{border-radius:16px}
+ .product .tag{max-width:calc(100% - 12px)}
+}
+@media(prefers-reduced-transparency:reduce){
+ .top{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}
+ #dialog.open{background:#081123a6;-webkit-backdrop-filter:none;backdrop-filter:none}
+}
