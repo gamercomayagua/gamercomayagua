@@ -443,15 +443,36 @@ function deliveryLabel(q){
 }
 var paymentNames={transfer:'Transferencia / depósito',tigo:'Tigo Money',cod:'Pagar al recibir'};
 function buildMessage(items,q,customer){
-var lines=['*GAMER COMAYAGUA*','*SOLICITUD DE COTIZACIÓN*','','*PRODUCTOS*'];
-items.forEach(function(i){lines.push('• '+i.qty+' × '+i.p.name+' — '+money(i.p.price*i.qty));});
-lines.push('','Subtotal: '+money(q.subtotal),'Entrega: '+deliveryLabel(q),'Envío: '+(q.shipping===null?'PENDIENTE DE CONFIRMAR':money(q.shipping)),'Método de pago: '+paymentNames[payMode]);
-if(q.prices[payMode]!==null){if(payMode==='tigo')lines.push(tigoFeeLabel+': '+tigoFeeAmount(q));if(payMode==='cod')lines.push('Comisión pago al recibir (15%): '+money(q.codFee));lines.push('*TOTAL: '+paymentAmount(q.prices[payMode],payMode)+'*');if(payMode==='cod'){lines.push('Anticipo (envío + comisión): '+money(q.shipping+q.codFee));lines.push('Saldo en efectivo al recibir: '+money(q.subtotal));}}
-else lines.push('*TOTAL PENDIENTE DE COTIZAR ENVÍO Y COMISIÓN*');
-var fields=[['nombre','Cliente'],['telefono','Teléfono'],['departamento','Departamento'],['municipio','Municipio'],['direccion','Barrio/colonia y referencia']];
-fields.forEach(function(f){var v=String(customer[f[0]]||'').trim();if(v)lines.push(f[1]+': '+v);});
-if(shippingMode==='local')lines.push('Tarifa base desde Col. Piedras Bonitas. Espera, parada adicional o calle adentro, si aplica, se cotiza por separado.');
-lines.push('','Solicito confirmar disponibilidad, envío y datos de pago.');return lines.join('\n');}
+ var total=q.prices[payMode];
+ var lines=['*GAMER COMAYAGUA*','Solicitud de cotización','','*PRODUCTOS*',''];
+ items.forEach(function(item,index){
+  lines.push(String(index+1)+'. '+item.p.name);
+  lines.push('   '+item.qty+' × '+money(item.p.price)+' = '+money(item.p.price*item.qty),'');
+ });
+ lines.push('*ENTREGA*',deliveryLabel(q));
+ var fields=[['nombre','Cliente'],['telefono','Teléfono'],['departamento','Departamento'],['municipio','Municipio'],['direccion','Referencia']];
+ fields.forEach(function(field){
+  var value=String(customer[field[0]]||'').trim();
+  if(value)lines.push(field[1]+': '+value);
+ });
+
+ lines.push('','*PAGO · '+paymentNames[payMode]+'*',
+  'Productos: '+money(q.subtotal),
+  'Envío: '+(q.shipping===null?'Por confirmar':money(q.shipping)));
+ if(payMode==='tigo')lines.push(tigoFeeLabel+': '+tigoFeeAmount(q));
+ if(payMode==='cod'&&total!==null){
+  lines.push('Comisión pago al recibir (15%): '+money(q.codFee));
+ }
+ lines.push('',total===null?'*TOTAL POR CONFIRMAR*':'*TOTAL: '+paymentAmount(total,payMode)+'*');
+ if(payMode==='cod'&&total!==null){
+  lines.push('Anticipo: '+money(q.shipping+q.codFee),'Saldo al recibir: '+money(q.subtotal));
+ }
+ if(shippingMode==='local'){
+  lines.push('','Tarifa base desde Col. Piedras Bonitas. Los servicios adicionales se cotizan por separado.');
+ }
+ lines.push('','Por favor, confirmen la disponibilidad, el envío y los datos de pago.');
+ return lines.join('\n');
+}
 function customerData(draft){
  var fields={nombre:'customerName',telefono:'customerPhone',departamento:'customerDepartment',municipio:'customerMunicipality',direccion:'customerAddress'};
  var data=Object.fromEntries(Object.entries(fields).map(function(pair){return [pair[0],$(pair[1])?.value.trim()||''];}));
