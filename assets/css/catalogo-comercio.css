@@ -711,3 +711,17 @@ body{
  .gc-store-nav a,.product{transition:none}
  .product:hover{transform:none}
 }
+
+.gc-clear-search,.gc-active-filters button{
+ min-height:44px;border:0;border-radius:9px;background:transparent;color:#344762;font-weight:750;
+}
+.gc-clear-search{flex:0 0 44px;font-size:1.3rem}
+.gc-catalog-search input::-webkit-search-cancel-button{display:none}
+.gc-active-filters{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ margin-top:8px;padding:2px 8px 2px 12px;
+ border:1px solid #dce5f0;border-radius:12px;background:#fff;color:#344762;font-size:.82rem;
+}
+.gc-active-filters span{min-width:0;overflow-wrap:anywhere}
+.gc-active-filters button{flex:none;text-decoration:underline;padding-inline:8px}
+.gc-active-filters[hidden],.gc-clear-search[hidden]{display:none}
