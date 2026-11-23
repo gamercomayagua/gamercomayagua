@@ -725,3 +725,43 @@ body{
 .gc-active-filters span{min-width:0;overflow-wrap:anywhere}
 .gc-active-filters button{flex:none;text-decoration:underline;padding-inline:8px}
 .gc-active-filters[hidden],.gc-clear-search[hidden]{display:none}
+
+.gc-category-trigger{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ width:100%;min-width:0;min-height:48px;padding:9px 12px;text-align:left;
+ background:#fafcff;color:#243356;border:1px solid #d3dbeb;border-radius:12px;
+}
+.gc-category-trigger span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gc-category-trigger[hidden],#category[hidden]{display:none}
+.gc-category-picker{
+ width:min(600px,calc(100% - 24px));max-height:calc(100dvh - 28px);
+ padding:18px;border:1px solid #dce5f0;border-radius:20px;
+ background:#fff;color:#172642;box-shadow:0 20px 55px #101d3a36;
+}
+.gc-category-picker[open]{display:flex;flex-direction:column;gap:8px}
+.gc-category-picker::backdrop{background:#101d3a70;backdrop-filter:blur(4px)}
+.gc-category-picker header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gc-category-picker h2{margin:0;font-size:1.25rem}
+.gc-category-picker label{font-size:.82rem;font-weight:750}
+.gc-category-picker input{
+ flex:none;width:100%;min-height:44px;padding:8px 12px;font:inherit;font-size:16px;
+ color:inherit;background:#f3f5fa;border:1px solid #dce5f0;border-radius:11px;
+}
+.gc-category-picker button{
+ min-height:44px;padding:8px 10px;color:inherit;background:#f3f5fa;
+ border:1px solid #dce5f0;border-radius:10px;font:inherit;font-size:.85rem;
+}
+.gc-category-picker header button{width:44px;font-size:1.3rem}
+.gc-category-choices{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:6px;overflow:auto;overscroll-behavior:contain;padding:3px;
+}
+.gc-category-choices button{text-align:left;overflow-wrap:anywhere}
+.gc-category-choices button[aria-pressed=true]{background:#152642;color:#fff;border-color:#152642}
+.gc-category-choices button[aria-pressed=true]::before{content:"✓";margin-inline-end:6px}
+.gc-category-picker :focus-visible{outline:2px solid #4267c5;outline-offset:2px}
+@media(max-width:460px){
+ .gc-category-picker{padding:13px}
+ .gc-category-choices{grid-template-columns:minmax(0,1fr)}
+ .gc-category-trigger{min-height:44px;font-size:.82rem}
+}
