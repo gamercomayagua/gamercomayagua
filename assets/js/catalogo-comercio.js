@@ -325,7 +325,7 @@ function detail(p){
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Detalles, pagos y opciones para compartir</summary>'+reference+description+paymentRows(q)+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  var img=box.querySelector('.gc-product-image');if(img)img.onerror=function(){img.replaceWith(document.createTextNode('Imagen no disponible'));};
  if(p.soldOut)box.classList.add('gc-soldout-detail');
@@ -418,31 +418,33 @@ function cartView(refresh){
  var previous=refresh===true?customerData(true):null;
  var previousScroll=previous?$('gcCartScroll')?.scrollTop||0:0;
  var previousSearch=previous?$('gcLocalSearch')?.value||'':'';
- var previousPanels=previous?['gcCustomerDetails','gcQuoteTools','gcPaymentCompare'].filter(function(id){return $(id)?.open;}):[];
+ var previousTab=previous?$('gcCartTabs')?.querySelector('[aria-pressed=true]')?.dataset.cartTarget:null;
+ var previousPanels=previous?['gcPaymentCompare'].filter(function(id){return $(id)?.open;}):[];
  currentDialog='cart';
  var root=wrap(`<div class="gc-checkout"><header class="gc-cart-head"><img alt="" src="${esc(logoUrl())}"><div><h2>Mi cotización</h2><p id="gcCartCount"></p></div></header>
  <div class="gc-cart-scroll" id="gcCartScroll">
-  <nav class="gc-cart-jumps" aria-label="Secciones de la cotización">
+  <nav class="gc-cart-jumps" id="gcCartTabs" aria-label="Secciones de la cotización">
+   <button class="btn outline" type="button" data-cart-target="gcItemsSection">Productos</button>
    <button class="btn outline" type="button" data-cart-target="gcDeliverySection">Envío</button>
    <button class="btn outline" type="button" data-cart-target="gcPaymentSection">Pago</button>
    <button class="btn outline" type="button" data-cart-target="gcCustomerDetails">Datos</button>
    <button class="btn outline" type="button" data-cart-target="gcQuoteTools">PDF</button>
   </nav>
 <div class="gc-cart-layout"><div class="gc-cart-main">
-<section class="gc-section"><h3>Productos</h3><div id="gcCartItems"></div></section>
+<section class="gc-section" id="gcItemsSection"><h3>Productos</h3><div id="gcCartItems"></div></section>
 <section class="gc-section" id="gcDeliverySection"><h3>Entrega y envío</h3><div class="gc-ship-choices"><label><input type="radio" name="gcShipping" value="national"><span>Envío nacional <small>L 110 (o gratis si aplica)</small></span></label><label><input type="radio" name="gcShipping" value="local"><span>Comayagua y alrededores <small>Tarifa según destino</small></span></label><label><input type="radio" name="gcShipping" value="pickup"><span>Retiro en tienda <small>Sin costo</small></span></label></div><div id="gcLocalField" class="gc-local-chooser" hidden>
  <div class="gc-local-fields"><label for="gcLocalSearch">Buscar barrio, colonia o destino<input id="gcLocalSearch" type="search" placeholder="Ej. Lomas del Río, Suyapa, Lejamaní" autocomplete="off"></label>
  <label for="gcLocalZone">Zona de entrega<select id="gcLocalZone"><option value="">Seleccioná un destino</option></select></label></div>
  <div id="gcLocalSummary" class="gc-local-summary" aria-live="polite"><div><strong id="gcLocalName">Elegí tu zona de entrega</strong><span id="gcLocalPlace">El costo se agrega a tu cotización.</span></div><b id="gcLocalCost" hidden></b></div>
  <details class="gc-local-terms"><summary>Condiciones de entrega local</summary><p>Salida desde Col. Piedras Bonitas. Incluye 10 min de cortesía. Si solicitás espera adicional (L 15–20), una parada extra (L 15 en la ciudad o L 20 fuera) o entrega calle adentro en Jarín (L 5–10), acordaremos el cargo antes del cobro. Sin servicio local en Siguatepeque ni La Libertad.</p></details>
 </div></section>
-<details class="gc-section gc-cart-details" id="gcCustomerDetails"><summary><span id="gcCustomerHeading">Datos de entrega</span></summary><div class="gc-customer-grid">
+<section class="gc-section" id="gcCustomerDetails"><h3 id="gcCustomerHeading">Datos de entrega</h3><div class="gc-customer-grid">
  <label>Nombre<input id="customerName" placeholder="Nombre del cliente" autocomplete="name" maxlength="100"></label>
  <label>Celular<input id="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+504..." maxlength="30"></label>
  <label id="gcDepartmentField">Departamento<select id="customerDepartment"></select></label>
  <label id="gcMunicipalityField">Municipio<select id="customerMunicipality"></select></label>
  <label id="gcAddressField" class="gc-full"><span id="gcAddressLabel">Barrio, colonia o referencia</span><input id="customerAddress" maxlength="160" placeholder="Dirección para la entrega"></label>
-</div></details></div>
+</div></section></div>
 <aside class="gc-cart-summary">
  <section class="gc-section" id="gcPaymentSection"><h3>Forma de pago</h3>
   <div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div>
@@ -450,9 +452,9 @@ function cartView(refresh){
   <p id="gcSelectedTotal" class="gc-payment-note"></p>
   <details class="gc-cart-compare" id="gcPaymentCompare"><summary>Comparar las formas de pago</summary><div id="gcCompare"></div></details>
  </section>
- <details class="gc-section gc-cart-details" id="gcQuoteTools"><summary>Descargas y otras acciones</summary>
+ <section class="gc-section" id="gcQuoteTools"><h3>PDF y otras acciones</h3>
   <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Cotización en PDF<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparativa en PDF<small>3 formas de pago</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
- </details>
+ </section>
  <p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p>
 </aside></div></div>
 <footer class="gc-cart-bottom"><div><span id="gcQuickLabel">Total estimado</span><strong id="gcQuickTotal" aria-live="polite"></strong></div><button type="button" id="gcWhatsapp" class="btn red">Continuar por WhatsApp</button></footer>
@@ -503,6 +505,7 @@ function itemRender(){
  root.querySelector('#gcCartCount').textContent=count===1?'1 artículo':count+' artículos';
  root.querySelector('#gcCartScroll').classList.toggle('gc-cart-empty',!items.length);
  if(!items.length){
+  root.querySelector('#gcItemsSection').hidden=false;
   itemsBox.innerHTML='<div class="gc-cart-empty-message"><p>Tu cotización está vacía.</p><a class="btn outline" href="#catalogo">Explorar productos</a></div>';
   itemsBox.querySelector('a').addEventListener('click',close);return;
  }
@@ -554,26 +557,32 @@ root.querySelectorAll('input[name=gcPayment]').forEach(function(input){input.che
 if(window.GC_HONDURAS)window.GC_HONDURAS.bind(root.querySelector('#customerDepartment'),root.querySelector('#customerMunicipality'));
 else {root.querySelector('#customerDepartment').outerHTML='<input id="customerDepartment" placeholder="Departamento">';root.querySelector('#customerMunicipality').outerHTML='<input id="customerMunicipality" placeholder="Municipio">';}
 root.querySelector('#gcClear').onclick=function(){cart=Object.create(null);saveCart();itemRender();totalsRender();};
-whatsapp.onclick=function(){var items=cartItems();if(!items.length)return;var q=totalsRender();if(shippingMode==='local'&&!q.zone){localSelect.focus();return;}if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
+whatsapp.onclick=function(){var items=cartItems();if(!items.length)return;var q=totalsRender();if(shippingMode==='local'&&!q.zone){showCartTab('gcDeliverySection');localSelect.focus();return;}if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}var url='https://wa.me/'+PHONE+'?text='+encodeURIComponent(buildMessage(items,q,customerData()));window.open(url,'_blank','noopener');};
 function openQuote(comparative){
  if(!catalogReady){toast('Espera a que se actualicen los precios.');return;}
  var items=cartItems();
  if(!items.length){toast('Primero agregá productos');return;}
  var q=totalsRender();
- if(shippingMode==='local'&&!q.zone){toast('Elegí el destino antes de imprimir');localSelect.focus();return;}
+ if(shippingMode==='local'&&!q.zone){toast('Elegí el destino antes de imprimir');showCartTab('gcDeliverySection');localSelect.focus();return;}
  printQuote(items,q,comparative);
 }
 root.querySelector('#gcPrint').onclick=function(){openQuote(false);};
 root.querySelector('#gcPrintCompare').onclick=function(){openQuote(true);};
 root.querySelector('#gcBank').onclick=function(){showBankAccounts(root);};
-root.querySelectorAll('[data-cart-target]').forEach(function(button){
- button.onclick=function(){
-  var target=root.querySelector('#'+button.dataset.cartTarget);
-  if(target.tagName==='DETAILS')target.open=true;
-  target.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
- };
+var cartTabs=Array.from(root.querySelectorAll('[data-cart-target]'));
+function showCartTab(id){
+ cartTabs.forEach(function(button){
+  var active=button.dataset.cartTarget===id;
+  button.setAttribute('aria-pressed',String(active));
+  root.querySelector('#'+button.dataset.cartTarget).hidden=!active;
+ });
+ root.querySelector('#gcCartScroll').scrollTop=0;
+}
+cartTabs.forEach(function(button){
+ button.setAttribute('aria-controls',button.dataset.cartTarget);
+ button.onclick=function(){showCartTab(button.dataset.cartTarget);};
 });
-itemRender();totalsRender();open(root,'cart');
+itemRender();totalsRender();open(root,'cart');showCartTab(previousTab||'gcItemsSection');
 if(previous){
  previousPanels.forEach(function(id){$(id).open=true;});
  $('gcCartScroll').scrollTop=previousScroll;
@@ -721,15 +730,30 @@ $('gcShareCategory').onclick=function(){
  if(category)shareStoreLink('categoria',category,category);
 };
 $('ownOnly').onclick=function(){onlyOwn=!onlyOwn;this.setAttribute('aria-pressed',String(onlyOwn));filter();};
-function setPromotionView(active){
- onlyPromos=active;
- $('allProducts').setAttribute('aria-pressed',String(!active));
- $('promotionsOnly').setAttribute('aria-pressed',String(active));
- $('resultsTitle').textContent=active?'Promociones':'Productos';
+function renderStoreView(){
+ var view=new URLSearchParams(location.search).get('vista');
+ if(!view && location.hash==='#combos')view='combos';
+ if(view!=='combos'&&view!=='promociones')view='todos';
+ onlyPromos=view==='promociones';
+ $('catalogo').hidden=view==='combos';
+ $('combos').hidden=view!=='combos';
+ document.querySelectorAll('[data-store-view]').forEach(function(link){
+  if(link.dataset.storeView===view)link.setAttribute('aria-current','page');
+  else link.removeAttribute('aria-current');
+ });
+ $('resultsTitle').textContent=onlyPromos?'Promociones':'Productos';
  filter();
 }
-$('allProducts').onclick=function(){setPromotionView(false);};
-$('promotionsOnly').onclick=function(){setPromotionView(true);};
+document.querySelectorAll('[data-store-view]').forEach(function(link){
+ link.onclick=function(event){
+  if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
+  if(location.href!==link.href)history.pushState(null,'',link.href);
+  renderStoreView();
+  window.scrollTo({top:0,behavior:'instant'});
+ };
+});
+window.addEventListener('popstate',renderStoreView);
 $('catalogSearchForm').onsubmit=function(event){
  event.preventDefault();
  $('search').blur();
@@ -738,5 +762,5 @@ $('catalogSearchForm').onsubmit=function(event){
 $('search').addEventListener('input',filter);$('category').addEventListener('change',filter);$('sort').addEventListener('change',filter);$('more').onclick=function(){offset+=24;render();};
 $('cartFloat').onclick=cartView;$('cartTop').onclick=cartView;$('closeDialog').onclick=close;$('dialog').onclick=function(event){if(event.target===$('dialog'))close();};document.addEventListener('keydown',function(event){if(event.key==='Escape')close();});
 if(window.GC_MARKS)window.GC_MARKS.applyStyles();
-readCart();renderCounts();renderCombos();init();
+readCart();renderCounts();renderStoreView();renderCombos();init();
 })();
