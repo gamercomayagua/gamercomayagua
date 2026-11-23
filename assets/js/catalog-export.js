@@ -350,5 +350,19 @@ function open(options){
  const parent=root.parentElement?.parentElement;
  if(parent)observer.observe(parent,{childList:true,subtree:true});
 }
-window.GC_EXPORT={open};
+async function downloadProduct(product,options){
+ const {canvas,missing}=await drawPage({...options,title:product.name,prices:true},[product],0,1);
+ try{
+  if(missing)throw Error('La foto no está disponible para descargar. Probá guardar la ficha como PDF.');
+  const url=URL.createObjectURL(await blob(canvas,'image/png'));
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=clean(product.name)+'.png';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+ }finally{canvas.width=canvas.height=1;}
+}
+window.GC_EXPORT={open,downloadProduct};
 })();
