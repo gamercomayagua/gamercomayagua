@@ -765,3 +765,30 @@ body{
  .gc-category-choices{grid-template-columns:minmax(0,1fr)}
  .gc-category-trigger{min-height:44px;font-size:.82rem}
 }
+
+/* Responsive refinements for browsing and checkout. */
+@media(max-width:650px){
+ .gc-store-nav{gap:6px}
+ .gc-store-nav a{line-height:1.2}
+ .gc-search-filters summary{min-height:44px}
+ .gc-catalog-options summary{min-height:44px;align-content:center}
+ .product .details{padding:10px}
+ .product .gc-stock-line{line-height:1.35}
+ .gc-product-payments .gc-payrow{gap:6px;align-items:baseline}
+ .gc-category-picker{max-height:min(70dvh,620px)}
+ .gc-cart-bottom{padding-inline:14px}
+ .gc-checkout .gc-line-total{min-width:0;overflow-wrap:anywhere}
+ .gc-checkout .gc-line-total b{white-space:normal}
+}
+@media(min-width:651px){
+ .gc-store-nav a{min-width:108px}
+ #catalogo .searchpanel{padding:12px}
+ .gc-catalog-search{gap:10px}
+ .gc-search-filter-fields{gap:10px}
+ .product .details{padding:14px}
+ .product .gc-product-title{line-height:1.4}
+ .gc-category-picker{padding:22px}
+ .gc-category-choices{gap:9px}
+ .gc-product-payments .gc-payrow{padding:10px 12px}
+ .gc-checkout .gc-cart-jumps{gap:8px;padding-inline:16px}
+}
