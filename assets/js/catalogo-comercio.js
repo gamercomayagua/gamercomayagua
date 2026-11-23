@@ -325,7 +325,11 @@ function render(){
  var img=card.querySelector('.gc-product-image');
  if(img){
   if(index<2){img.loading='eager';if(index===0)img.fetchPriority='high';}
-  img.onerror=function(){img.replaceWith(Object.assign(document.createElement('span'),{className:'noimg',textContent:'Imagen no disponible'}));};
+  img.onerror=function(){
+   var photo=img.parentElement;
+   var placeholder=Object.assign(document.createElement('span'),{className:'noimg',textContent:'Imagen no disponible'});
+   photo.replaceChildren(...Array.from(photo.children).filter(function(child){return child.matches('.tag,.gc-sold-badge,.gc-free-badge');}),placeholder);
+  };
  }
  card.querySelectorAll('.gc-open-product').forEach(function(item){item.onclick=function(){detail(p);};item.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();detail(p);}};});
  card.querySelector('.add').onclick=function(){add(p);};fragment.appendChild(card);
