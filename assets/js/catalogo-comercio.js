@@ -470,7 +470,7 @@ function buildMessage(items,q,customer){
  if(shippingMode==='local'){
   lines.push('','Tarifa base desde Col. Piedras Bonitas. Los servicios adicionales se cotizan por separado.');
  }
- lines.push('','Por favor, confirmen la disponibilidad, el envío y los datos de pago.');
+ lines.push('','Gracias por su atención.');
  return lines.join('\n');
 }
 function customerData(draft){
@@ -580,7 +580,10 @@ function cartView(refresh){
  </section>
  <section class="gc-section" id="gcReviewSection" hidden>
   <h3>Revisá tu cotización</h3>
-  <div class="gc-review-context" id="gcReviewContext"></div>
+  <dl class="gc-review-context">
+   <div><dt>Entrega</dt><dd id="gcReviewDelivery"></dd><button type="button" class="btn outline" data-review-edit="gcDeliverySection" aria-label="Cambiar entrega">Cambiar</button></div>
+   <div><dt>Pago</dt><dd id="gcReviewPayment"></dd><button type="button" class="btn outline" data-review-edit="gcPaymentSection" aria-label="Cambiar forma de pago">Cambiar</button></div>
+  </dl>
   <dl class="gc-price-breakdown" id="gcReviewBreakdown"></dl>
  </section>
  <p class="hint">Los importes son de referencia y están sujetos a existencias y confirmación de Gamer Comayagua.</p>
@@ -688,7 +691,8 @@ breakdown.innerHTML='<div><dt>Subtotal de productos</dt><dd>'+money(q.subtotal)+
 var review=root.querySelector('#gcReviewBreakdown');
 review.innerHTML=breakdown.innerHTML+'<div class="gc-review-total"><dt>Total</dt><dd>'+paymentAmount(chosen,payMode)+'</dd></div>';
 if(payMode==='cod'&&chosen!==null)review.insertAdjacentHTML('beforeend','<div><dt>Anticipo</dt><dd>'+money(q.shipping+fee)+'</dd></div><div><dt>Saldo al recibir</dt><dd>'+money(q.subtotal)+'</dd></div>');
-root.querySelector('#gcReviewContext').textContent=deliveryLabel(q)+' · '+paymentNames[payMode];
+root.querySelector('#gcReviewDelivery').textContent=deliveryLabel(q);
+root.querySelector('#gcReviewPayment').textContent=paymentNames[payMode];
 paymentNote.textContent=needsZone?'Elegí tu colonia o destino para calcular el total.':payMode==='cod'?'Anticipo '+money(q.shipping+fee)+' · Saldo al recibir '+money(q.subtotal):'';
 paymentNote.hidden=!paymentNote.textContent;
 root.querySelector('#gcQuickLabel').textContent=needsZone?'Subtotal sin envío':payMode==='transfer'?'Total con transferencia':payMode==='tigo'?'Total con Tigo Money':'Total con pago al recibir';
@@ -734,6 +738,13 @@ function showCartTab(id){
 cartTabs.forEach(function(button){
  button.setAttribute('aria-controls',button.dataset.cartTarget);
  button.onclick=function(){showCartTab(button.dataset.cartTarget);};
+});
+root.querySelectorAll('[data-review-edit]').forEach(function(button){
+ button.onclick=function(){
+  var section=button.dataset.reviewEdit;
+  showCartTab(section);
+  cartTabs.find(function(tab){return tab.dataset.cartTarget===section;})?.focus({preventScroll:true});
+ };
 });
 itemRender();open(root,'cart');showCartTab(activeTab);
 if(previous){
