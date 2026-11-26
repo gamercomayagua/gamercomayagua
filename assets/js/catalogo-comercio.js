@@ -758,7 +758,7 @@ if(previous){
  $('customerMunicipality').value=previous.municipio;$('customerAddress').value=previous.direccion;
 }}
 async function fetchStatic(){var meta=await fetch('data/meta.json',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Catálogo no disponible');return r.json();});
-var chunks=await Promise.all(meta.parts.map(function(path){return fetch(path).then(function(r){if(!r.ok)throw Error('Archivo faltante: '+path);return r.json();});}));
+var chunks=await Promise.all(meta.parts.map(function(path){return fetch(path,{cache:"no-cache"}).then(function(r){if(!r.ok)throw Error('Archivo faltante: '+path);return r.json();});}));
 currentSupplierAdditions=chunks.flatMap(function(c){return c.supplemental?c.products||[]:[];});
 currentSupplierAdditions.forEach(function(p){recentProductIds.add(String(p.id));});
 return chunks.flatMap(function(c){return c.products||[];});}
