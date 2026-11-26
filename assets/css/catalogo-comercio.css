@@ -652,7 +652,7 @@ body{
 #gcCustomerDetails .gc-customer-grid{margin:0}
 .gc-cart-empty .gc-cart-jumps{display:none}
 @media(max-width:650px){
- .gc-store-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .gc-store-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
  .gc-store-nav a{padding:0 4px;font-size:.8rem}
  .gc-cart-jumps .btn{font-size:.69rem}
 }
@@ -968,3 +968,5 @@ body{
   color:#142746;
   font-size:1.07rem;
 }
+
+@media(max-width:360px){.gc-store-intro .gc-store-nav a{font-size:.72rem}}

@@ -5,6 +5,9 @@ var $=function(id){return document.getElementById(id);};
 var PHONE='50431517755';
 var CONFIG={shipping:110,tigo:0.15,cod:0.15,codMin:350};
 var catalogReady=false;
+var onlyNew=false;
+var currentSupplierAdditions=[];
+var recentProductIds=new Set();
 var incomingLink=new URLSearchParams(location.search);
 var catalogRevision=new URL(document.currentScript.src).search;
 var requestedProduct=incomingLink.get('producto'),requestedCategory=incomingLink.get('categoria');
@@ -293,7 +296,7 @@ function selectCategory(){var select=$('category'),value=select.value,choices=[.
 function filter(reset){
 var q=$('search').value.trim(),words=searchWords(q),key=words.join(''),cat=$('category').value,sort=$('sort').value,scores=new Map();
 listed=all.filter(function(p){
- if((onlyOwn&&!p.own)||(onlyPromos&&(!p.promotion||p.soldOut))||(onlyAvailable&&(p.soldOut||p.stock===null))||(cat&&p.category!==cat))return false;
+ if((onlyNew&&!recentProductIds.has(p.id))||(onlyOwn&&!p.own)||(onlyPromos&&(!p.promotion||p.soldOut))||(onlyAvailable&&(p.soldOut||p.stock===null))||(cat&&p.category!==cat))return false;
  if(!key)return true;
  var score=searchScore(p,words,key);
  scores.set(p,score);
@@ -334,7 +337,7 @@ function render(){
  var root=$('products');root.replaceChildren();
  var shown=Math.min(offset,listed.length);
  if(catalogReady||all.length)$('resultCount').textContent=(shown<listed.length?'Mostrando '+shown+' de ':'')+listed.length.toLocaleString('es-HN')+(listed.length===1?' producto':' productos');
- if(!listed.length&&catalogReady)root.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>'+(onlyPromos?'No hay promociones para estos filtros':'No hay coincidencias')+'</h3><p>Probá otra búsqueda o cambiá los filtros.</p><button type="button" class="btn outline">Restablecer búsqueda y filtros</button></div>';
+ if(!listed.length&&catalogReady)root.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>'+(onlyNew?'No hay novedades para estos filtros':onlyPromos?'No hay promociones para estos filtros':'No hay coincidencias')+'</h3><p>Probá otra búsqueda o cambiá los filtros.</p><button type="button" class="btn outline">Restablecer búsqueda y filtros</button></div>';
  if(!listed.length&&catalogReady)root.querySelector('button').onclick=function(){resetFilters();$('search').value='';applySearch();$('search').focus({preventScroll:true});};
  var fragment=document.createDocumentFragment();
  listed.slice(0,offset).forEach(function(p,index){
@@ -756,6 +759,8 @@ if(previous){
 }}
 async function fetchStatic(){var meta=await fetch('data/meta.json',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Catálogo no disponible');return r.json();});
 var chunks=await Promise.all(meta.parts.map(function(path){return fetch(path).then(function(r){if(!r.ok)throw Error('Archivo faltante: '+path);return r.json();});}));
+currentSupplierAdditions=chunks.flatMap(function(c){return c.supplemental?c.products||[]:[];});
+currentSupplierAdditions.forEach(function(p){recentProductIds.add(String(p.id));});
 return chunks.flatMap(function(c){return c.products||[];});}
 function jsonp(url,params){return new Promise(function(resolve,reject){var callback='gcPublic_'+Math.random().toString(36).slice(2),tag=document.createElement('script'),timer=setTimeout(function(){finish(Error('Demasiado tiempo sin respuesta'));},18000);
 function finish(err,data){clearTimeout(timer);tag.remove();try{delete window[callback];}catch(e){}if(err)reject(err);else resolve(data);}
@@ -865,7 +870,7 @@ async function init(){
   $('syncStatus').textContent='Catálogo Gamer Comayagua';
  }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});
  var refreshSupplier=Promise.all([supplierLive,supplierSnapshot]).then(function(results){
-  if(results[0]?.length){comboPrices='ready';supplier=prepare(results[0]);updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
+  if(results[0]?.length){comboPrices='ready';var liveIds=new Set(results[0].map(function(p){return String(p.id);}));supplier=prepare(currentSupplierAdditions.filter(function(p){return !liveIds.has(String(p.id));}).concat(results[0]));updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
   else{comboPrices='unavailable';renderCombos();}
  });
  await Promise.all([ownSnapshot,supplierSnapshot]);
@@ -899,15 +904,16 @@ function renderStoreView(){
  $('search').value=new URLSearchParams(location.search).get('q')||'';
  var view=new URLSearchParams(location.search).get('vista');
  if(!view && location.hash==='#combos')view='combos';
- if(view!=='combos'&&view!=='promociones')view='todos';
+ if(view!=='combos'&&view!=='promociones'&&view!=='nuevo')view='todos';
  onlyPromos=view==='promociones';
+ onlyNew=view==='nuevo';
  $('catalogo').hidden=view==='combos';
  $('combos').hidden=view!=='combos';
  document.querySelectorAll('[data-store-view]').forEach(function(link){
   if(link.dataset.storeView===view)link.setAttribute('aria-current','page');
   else link.removeAttribute('aria-current');
  });
- $('resultsTitle').textContent=onlyPromos?'Promociones':'Productos';
+ $('resultsTitle').textContent=onlyNew?'Lo nuevo':onlyPromos?'Promociones':'Productos';
  filter();
 }
 document.querySelectorAll('[data-store-view]').forEach(function(link){
