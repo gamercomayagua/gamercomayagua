@@ -16,7 +16,7 @@ function loadImage(src){
 function exportPhotoUrl(src){
  try{
   const url=new URL(src,location.href);
-  if(url.origin==='https://phone-depot-cdn.ingeniacode.com'&&url.pathname.startsWith('/images/phonedepot/')){
+  if(url.origin==='https://phone-depot-cdn.ingeniacode.com'&&url.pathname.startsWith('/images/')){
    return 'https://wsrv.nl/?'+new URLSearchParams({url:url.href,w:'1200',h:'1200',fit:'inside',output:'webp'});
   }
  }catch(error){}
