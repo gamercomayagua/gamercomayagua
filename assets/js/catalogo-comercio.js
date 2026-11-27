@@ -23,7 +23,7 @@ var cleanUrl=function(v){return /^https:\/\//i.test(String(v||''))?String(v):'';
 var integer=function(v){var x=Number(v);return Number.isFinite(x)&&x>0?Math.round(x*100)/100:null;};
 function readCart(){try{var saved=JSON.parse(localStorage.getItem('gc-cart')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved)){Object.keys(saved).slice(0,100).forEach(function(id){if(/^[a-zA-Z0-9_-]{1,50}$/.test(id)){var q=Number(saved[id]);if(Number.isInteger(q)&&q>0&&q<=99)cart[id]=q;}});}}catch(e){}}
 function saveCart(){try{localStorage.setItem('gc-cart',JSON.stringify(cart));}catch(e){}renderCounts();}
-function renderCounts(){var n=Object.values(cart).reduce(function(s,q){return s+q;},0);$('countTop').textContent=n;$('countFloat').textContent=n;}
+function renderCounts(){var n=cartItems().reduce(function(s,item){return s+item.qty;},0);$('countTop').textContent=n;$('countFloat').textContent=n;}
 function toast(text){var t=$('toast');t.textContent=text;t.style.display='block';clearTimeout(toast.timeout);toast.timeout=setTimeout(function(){t.style.display='none';},2600);}
 function prepare(list){return (Array.isArray(list)?list:[]).filter(function(p){return p&&p.id&&p.name;}).map(function(p){
  var freshStock=supplierStockSnapshot?.units[p.id];
@@ -431,7 +431,7 @@ function render(){
  var fragment=document.createDocumentFragment();
  listed.slice(0,offset).forEach(function(p,index){
  var card=document.createElement('article');card.className='product'+(p.soldOut?' gc-soldout':'');
- card.innerHTML='<div class="photo gc-open-product" tabindex="0" role="button" aria-label="Ver '+esc(p.name)+'">'+(p.soldOut?'<span class="gc-sold-badge">AGOTADO</span>':p.freeShipping?'<span class="gc-free-badge">ENVÍO GRATIS</span>':'<span class="tag">'+esc(categoryName(p))+'</span>')+photoMarkup(p)+'</div><div class="details"><p class="category">'+esc(subcategoryName(p))+'</p>'+promoBadge(p)+'<button class="name gc-product-title gc-open-product" type="button">'+esc(p.name)+'</button><button class="price gc-product-price gc-open-product" type="button">'+(p.soldOut?'<span class="gc-out">AGOTADO</span>':productPrice(p))+'</button><p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><div class="actions gc-product-action"><button type="button" class="btn add" '+(p.soldOut||p.price===null?'disabled':'')+'>'+(p.soldOut?'Agotado':'＋ Añadir al carrito')+'</button></div></div>';
+ card.innerHTML='<div class="photo gc-open-product" tabindex="0" role="button" aria-label="Ver '+esc(p.name)+'">'+(p.soldOut?'<span class="gc-sold-badge">AGOTADO</span>':p.freeShipping?'<span class="gc-free-badge">ENVÍO GRATIS</span>':'<span class="tag">'+esc(categoryName(p))+'</span>')+photoMarkup(p)+'</div><div class="details"><p class="category">'+esc(subcategoryName(p))+'</p>'+promoBadge(p)+'<button class="name gc-product-title gc-open-product" type="button">'+esc(p.name)+'</button><button class="price gc-product-price gc-open-product" type="button">'+(p.soldOut?'<span class="gc-out">AGOTADO</span>':productPrice(p))+'</button><p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div>';
  if(selectingCatalog){
   var choice=document.createElement('label');choice.className='gc-catalog-choice';
   var check=document.createElement('input');check.type='checkbox';check.checked=selectedCatalog.has(p.id);
@@ -445,7 +445,7 @@ function render(){
   handlePhotoError(img,p);
  }
  card.querySelectorAll('.gc-open-product').forEach(function(item){item.onclick=function(){detail(p);};item.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();detail(p);}};});
- card.querySelector('.add').onclick=function(){add(p);};fragment.appendChild(card);
+ fragment.appendChild(card);
  });root.appendChild(fragment);$('more').style.display=offset<listed.length?'block':'none';updateCatalogControls();
 }
 var dialogTrigger=null;
@@ -503,17 +503,17 @@ function detail(p){
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><div class="gc-detail-actions gc-product-toolbar"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  handlePhotoError(box.querySelector('.gc-product-image'),p);
  if(p.soldOut)box.classList.add('gc-soldout-detail');
  box.querySelector('.gc-add').onclick=function(){add(p);};
  box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.ref+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
  box.querySelector('.gc-share-ficha').onclick=function(){openCatalog('product',p);};
- var share=wrap('<button type="button" class="btn outline gc-share-link">Compartir enlace</button>').firstElementChild;
+ var share=wrap('<button type="button" class="btn outline gc-share-link">Enlace</button>').firstElementChild;
  share.onclick=function(){shareStoreLink('producto',p.id,p.name);};
  box.querySelector('.gc-detail-actions').appendChild(share);
- var download=wrap('<button type="button" class="btn outline">Descargar imagen</button>').firstElementChild;
+ var download=wrap('<button type="button" class="btn outline">Imagen</button>').firstElementChild;
  download.onclick=async function(){
   download.disabled=true;
   download.textContent='Preparando imagen…';
@@ -522,7 +522,7 @@ function detail(p){
    const product=all.find(function(item){return item.id===p.id;})||p;
    await window.GC_EXPORT.downloadProduct(product,{logo:logoUrl(),watermark:store.watermark,phone:PHONE,money:money,stockText:stockText});
   }catch(error){toast(error.message||'No se pudo guardar la imagen');}
-  finally{download.disabled=false;download.textContent='Descargar imagen';}
+  finally{download.disabled=false;download.textContent='Imagen';}
  };
  box.querySelector('.gc-detail-actions').appendChild(download);
  open(box,'product');
@@ -916,6 +916,7 @@ async function init(){
   var ownKeys=new Set(own.map(catalogKey).filter(Boolean));
   all=own.concat(supplier.filter(function(p){return !ownKeys.has(catalogKey(p));}));
   var retained=all.some(function(p){return p.own;});
+  renderCounts();
   $('ownOnly').hidden=!retained;
   $('ownOnly').setAttribute('aria-pressed',String(onlyOwn));
   if(!retained&&catalogReady){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}

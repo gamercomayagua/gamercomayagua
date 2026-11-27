@@ -990,3 +990,10 @@ body{
  .gc-store-intro .gc-store-nav a { background:transparent;border-color:transparent; }
  .gc-store-intro .gc-store-nav [aria-current=page] { background:#152642;color:#fff; }
 }
+
+.gc-catalog-options .gc-catalog-tools { display:flex;flex-wrap:wrap;gap:6px; }
+.gc-catalog-tools #gcCreateCatalog:disabled { display:none; }
+.gc-detail-compact .gc-product-toolbar { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-block:12px; }
+.gc-product-toolbar .btn { min-width:0;min-height:44px;padding:4px 2px;border-radius:9px;font-size:clamp(.69rem,2.5vw,.85rem); }
+#products .product .details { gap:4px; }
+#products .product .gc-stock-line { margin-bottom:0; }

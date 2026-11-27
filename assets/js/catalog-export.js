@@ -117,40 +117,40 @@ async function drawVerticalProduct(options,product){
  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920;
  const ctx=canvas.getContext('2d',{alpha:false});
  ctx.textBaseline='top';
- const bg=ctx.createLinearGradient(0,0,1080,1920);
- bg.addColorStop(0,'#101b31');bg.addColorStop(1,'#203e61');
- ctx.fillStyle=bg;ctx.fillRect(0,0,1080,1920);
- ctx.fillStyle='#fa4b62';ctx.fillRect(48,52,8,64);
- if(logo)picture(ctx,logo,74,42,86,86);
- ctx.fillStyle='#fff';ctx.font='800 42px system-ui';
- ctx.fillText('GAMER COMAYAGUA',logo?182:76,65,850);
- roundBox(ctx,48,165,984,984,28,'#eef2f7');
+ ctx.fillStyle='#f6f2eb';ctx.fillRect(0,0,1080,1920);
+ ctx.fillStyle='#a82739';ctx.fillRect(0,0,1080,12);
+ if(logo)picture(ctx,logo,490,40,100,100);
+ ctx.textAlign='center';ctx.fillStyle='#22201f';ctx.font='800 34px system-ui';
+ ctx.fillText('GAMER COMAYAGUA',540,158,970);
+ roundBox(ctx,36,219,1008,1008,34,'#eae4dc');
  ctx.save();ctx.clip();
  if(product.soldOut)ctx.filter='grayscale(100%)';
- const area=picture(ctx,photo,48,165,984,984);
+ const area=picture(ctx,photo,36,219,1008,1008);
  ctx.filter='none';
  if(area)markPhoto(ctx,marks,area);
  else{
-  ctx.fillStyle='#435774';ctx.font='600 38px system-ui';ctx.textAlign='center';
-  ctx.fillText('Foto por consultar',540,640);
+  ctx.fillStyle='#4b4541';ctx.font='600 38px system-ui';
+  ctx.fillText('Foto por consultar',540,690);
  }
  ctx.restore();
- ctx.fillStyle='#fff';ctx.font='800 53px system-ui';
- const name=lines(ctx,options.title||product.name,984,4);
- name.forEach((line,i)=>ctx.fillText(line,48,1192+i*61,984));
- let y=1208+name.length*61;
+ ctx.textAlign='center';
+ ctx.fillStyle='#24201f';ctx.font='800 48px system-ui';
+ const name=lines(ctx,options.title||product.name,980,3);
+ name.forEach((line,i)=>ctx.fillText(line,540,1265+i*56,980));
+ let y=1276+name.length*56;
  if(options.prices&&!product.soldOut){
-  ctx.fillStyle='#ff818e';ctx.font='850 82px system-ui';
-  ctx.fillText(options.money(product.price),48,y,984);
-  y+=101;
+  ctx.fillStyle='#a82739';ctx.font='850 82px system-ui';
+  ctx.fillText(options.money(product.price),540,y,980);
+  y+=100;
  }
- ctx.fillStyle='#dbe8f7';ctx.font='600 32px system-ui';
- ctx.fillText(stockLabel(product,options.stockText)+'  ·  Ref. '+(product.ref||product.id),48,y,984);
- roundBox(ctx,48,1696,984,125,24,'#fff');
- ctx.fillStyle='#14243e';ctx.font='800 43px system-ui';
- ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),80,1732,920);
- ctx.fillStyle='#dbe8f7';ctx.font='26px system-ui';
- ctx.fillText('Envíos a toda Honduras · Sujeto a confirmación',48,1850,984);
+ ctx.fillStyle='#514944';ctx.font='600 29px system-ui';
+ ctx.fillText(stockLabel(product,options.stockText)+'  ·  Ref. '+(product.ref||product.id),540,y,980);
+ const contactY=Math.max(1690,y+54);
+ roundBox(ctx,72,contactY,936,88,44,'#272321');
+ ctx.fillStyle='#fff';ctx.font='800 37px system-ui';
+ ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),540,contactY+20,866);
+ ctx.fillStyle='#514944';ctx.font='28px system-ui';
+ ctx.fillText('Envíos a toda Honduras',540,contactY+107,936);
  return {canvas,missing:!photo&&product.photo?1:0};
 }
 async function drawPage(options,items,index,total){
