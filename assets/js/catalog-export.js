@@ -155,7 +155,7 @@ async function drawVerticalProduct(options,product){
  ctx.fillStyle=availability[1];ctx.fillText(stock,badgeX+left/2,y+12,left-22);
  ctx.fillStyle='#514944';ctx.fillText(reference,badgeX+left+18+right/2,y+12,right-22);
  if(options.productCode){
-  const code=String(options.productCode).toUpperCase().replace(/V(?=\d)/g,'B');
+  const code=String(options.productCode).toUpperCase();
   ctx.fillStyle='#514944';ctx.font='700 27px ui-monospace,monospace';
   ctx.fillText(code,540,y+70,936);
  }

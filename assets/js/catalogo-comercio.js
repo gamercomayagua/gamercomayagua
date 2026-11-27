@@ -1084,6 +1084,7 @@ if(typeof categoryPicker.showModal==='function'){
    var button=document.createElement('button');
    button.type='button';
    button.textContent=option.textContent;
+   if(!option.value)button.classList.add('gc-category-all');
    button.setAttribute('aria-pressed',String(option.value===categorySelect.value));
    button.onclick=function(){
     if(categorySelect.value!==option.value)$('subcategory').value='';

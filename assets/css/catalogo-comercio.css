@@ -1035,3 +1035,18 @@ footer.gc-store-footer .btn {background:#fff;font-size:.78rem;padding:7px 10px;}
 .gc-product-payments .gc-payrow .gc-tigo-fee {border:0;padding-top:0;}
 .gc-detail-compact .gc-product-toolbar .gc-add,.gc-detail-compact .gc-product-toolbar .gc-whatsapp {grid-column:auto;}
 .gc-detail-compact .gc-product-toolbar .gc-share-link,.gc-detail-compact .gc-product-toolbar .btn:last-child:not(.gc-whatsapp) {background:#fff;}
+
+.gc-category-picker .gc-category-choices {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+.gc-category-choices button {min-height:48px;padding:7px 9px;font-size:.83rem;line-height:1.25;}
+.gc-category-choices .gc-category-all {grid-column:1/-1;}
+footer.gc-store-footer {background:#f8f6f2;border-top:1px solid #e5ded4;padding-block:16px;}
+footer.gc-store-footer .container {display:flex;justify-content:space-between;gap:10px;}
+footer.gc-store-footer .gc-footer-brand {gap:8px;}
+footer.gc-store-footer .gc-footer-brand strong {color:#28221f;}
+footer.gc-store-footer .gc-footer-brand p {color:#5c514a;}
+footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;border-radius:999px;}
+@media(max-width:400px){
+ footer.gc-store-footer .container {display:grid;grid-template-columns:minmax(0,1fr) auto;}
+ footer.gc-store-footer .gc-footer-brand img {width:28px;height:28px;}
+ footer.gc-store-footer .btn {font-size:.72rem;padding-inline:7px;}
+}
