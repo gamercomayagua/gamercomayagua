@@ -8,6 +8,7 @@ var catalogReady=false;
 var onlyNew=false;
 var currentSupplierAdditions=[];
 var supplierStockSnapshot=null;
+var productCodes=Object.create(null);
 var recentProductIds=new Set();
 var incomingLink=new URLSearchParams(location.search);
 var catalogRevision=new URL(document.currentScript.src).search;
@@ -419,7 +420,7 @@ function detail(p){
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><div class="gc-detail-actions"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  handlePhotoError(box.querySelector('.gc-product-image'),p);
  if(p.soldOut)box.classList.add('gc-soldout-detail');
@@ -874,7 +875,11 @@ async function init(){
   if(!response.ok)throw Error('Inventario no disponible');
   return response.json();
  }).then(function(data){supplierStockSnapshot=data;}).catch(function(){});
- var supplierSnapshot=Promise.all([fetchStatic(),inventorySnapshot]).then(function([rows]){
+ var codesSnapshot=fetch('data/codigos-productos.json'+catalogRevision,{cache:'no-cache'}).then(function(response){
+  if(!response.ok)throw Error('Códigos no disponibles');
+  return response.json();
+ }).then(function(data){Object.assign(productCodes,data);}).catch(function(){});
+ var supplierSnapshot=Promise.all([fetchStatic(),inventorySnapshot,codesSnapshot]).then(function([rows]){
   supplier=prepare(rows);updateCatalog();
   $('syncStatus').textContent='Catálogo Gamer Comayagua';
  }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});

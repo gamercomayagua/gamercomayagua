@@ -970,3 +970,11 @@ body{
 }
 
 @media(max-width:360px){.gc-store-intro .gc-store-nav a{font-size:.72rem}}
+
+.gc-detail-code {
+  display:block;
+  margin:4px 0;
+  color:#475d7a;
+  font:600 .83rem/1.4 ui-monospace,monospace;
+  overflow-wrap:anywhere;
+}
