@@ -994,7 +994,12 @@ async function init(){
   $('syncStatus').textContent='Catálogo Gamer Comayagua';
  }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});
  var refreshSupplier=Promise.all([supplierLive,supplierSnapshot]).then(function(results){
-  if(results[0]?.length){comboPrices='ready';var liveIds=new Set(results[0].map(function(p){return String(p.id);}));supplier=prepare(currentSupplierAdditions.filter(function(p){return !liveIds.has(String(p.id));}).concat(results[0]));updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
+  if(results[0]?.length){comboPrices='ready';var liveIds=new Set(results[0].map(function(p){return String(p.id);}));var priceOverrides=new Map(currentSupplierAdditions.filter(function(p){return p.storePriceOverride;}).map(function(p){return [String(p.id),p];}));
+  var liveProducts=results[0].map(function(p){
+   var override=priceOverrides.get(String(p.id));
+   return override?{...p,price:override.price,regularPrice:null,discount:0,promotion:override.promotion===true}:p;
+  });
+  supplier=prepare(currentSupplierAdditions.filter(function(p){return !liveIds.has(String(p.id));}).concat(liveProducts));updateCatalog();$('syncStatus').textContent='✓ Precios del proveedor actualizados';}
   else{comboPrices='unavailable';renderCombos();}
  });
  await Promise.all([ownSnapshot,supplierSnapshot]);
