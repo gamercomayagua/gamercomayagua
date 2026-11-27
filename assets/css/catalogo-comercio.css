@@ -998,12 +998,6 @@ body{
 #products .product .details { gap:4px; }
 #products .product .gc-stock-line { margin-bottom:0; }
 
-.gc-store-footer {background:#fff;border-top:1px solid #dce4ee;color:#152642;padding-block:20px;}
-.gc-store-footer .container {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.gc-footer-brand {display:flex;align-items:center;gap:10px;}
-.gc-footer-brand img {object-fit:contain;flex:none;}
-.gc-footer-brand p {margin:2px 0 0;color:#4b5d74;font-size:.83rem;}
-.gc-store-footer a {min-height:44px;color:#152642;}
 .gc-cart-empty-message {display:grid;justify-items:center;text-align:center;gap:8px;padding:20px 10px;}
 .gc-cart-empty-message p {margin:0;}
 .gc-detail-compact .gc-product-toolbar {grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -1022,12 +1016,6 @@ body{
 .gc-detail-meta .gc-stock-line.is-out {background:#f7e4e8;color:#8e2337;}
 .gc-detail-amount {min-width:0;}
 
-footer.gc-store-footer {padding-block:14px;background:#edf1f6;}
-footer.gc-store-footer .container {justify-content:space-between;text-align:left;}
-footer.gc-store-footer .gc-footer-brand img {width:36px;height:36px;}
-footer.gc-store-footer .gc-footer-brand strong {display:block;color:#152642;font-size:.86rem;}
-footer.gc-store-footer .gc-footer-brand p {font-size:.76rem;}
-footer.gc-store-footer .btn {background:#fff;font-size:.78rem;padding:7px 10px;}
 .gc-detail-compact .gc-product-payments {padding:11px 12px;background:#f7f8fa;}
 .gc-product-payments .gc-payment-caption {margin:0 0 7px;color:#52647d;font-size:.79rem;}
 .gc-product-payments .gc-paygrid {gap:0;}
@@ -1039,17 +1027,6 @@ footer.gc-store-footer .btn {background:#fff;font-size:.78rem;padding:7px 10px;}
 .gc-category-picker .gc-category-choices {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
 .gc-category-choices button {min-height:48px;padding:7px 9px;font-size:.83rem;line-height:1.25;}
 .gc-category-choices .gc-category-all {grid-column:1/-1;}
-footer.gc-store-footer {background:#f8f6f2;border-top:1px solid #e5ded4;padding-block:16px;}
-footer.gc-store-footer .container {display:flex;justify-content:space-between;gap:10px;}
-footer.gc-store-footer .gc-footer-brand {gap:8px;}
-footer.gc-store-footer .gc-footer-brand strong {color:#28221f;}
-footer.gc-store-footer .gc-footer-brand p {color:#5c514a;}
-footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;border-radius:999px;}
-@media(max-width:400px){
- footer.gc-store-footer .container {display:grid;grid-template-columns:minmax(0,1fr) auto;}
- footer.gc-store-footer .gc-footer-brand img {width:28px;height:28px;}
- footer.gc-store-footer .btn {font-size:.72rem;padding-inline:7px;}
-}
 
 @media (max-width:650px) {
   .gc-store-intro-inner {
@@ -1134,28 +1111,6 @@ footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;
     padding-top:10px;
   }
 
-  footer.gc-store-footer {
-    padding-block:16px;
-    border-top-color:#dce4ee;
-    background:#fff;
-  }
-  footer.gc-store-footer .container {
-    display:grid;
-    grid-template-columns:minmax(0,1fr);
-    justify-items:start;
-    gap:8px;
-  }
-  footer.gc-store-footer .gc-footer-brand img {
-    width:34px;
-    height:34px;
-  }
-  footer.gc-store-footer .btn {
-    padding-inline:12px;
-    border-radius:10px;
-    background:#eaf4ee;
-    border-color:#d3e7da;
-    color:#18543d;
-  }
 }
 
 @media (max-width:650px) {
@@ -1256,21 +1211,6 @@ footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;
   }
 }
 
-.gc-footer-contact-text {
-  display:grid;
-  gap:2px;
-}
-.gc-footer-contact-text small {
-  font-size:.76rem;
-  font-weight:500;
-}
-footer.gc-store-footer .btn {
-  gap:14px;
-  text-align:left;
-}
-.gc-footer-contact-arrow {
-  font-size:1.05rem;
-}
 
 @media (max-width:650px) {
   .gc-store-intro {
@@ -1330,36 +1270,6 @@ footer.gc-store-footer .btn {
     border-color:#e4b8c2;
   }
 
-  footer.gc-store-footer {
-    padding-block:18px max(18px,env(safe-area-inset-bottom));
-    border-top-color:#e5ded4;
-    background:#f8f6f2;
-  }
-  footer.gc-store-footer .container {
-    gap:12px;
-  }
-  footer.gc-store-footer .gc-footer-brand {
-    gap:10px;
-  }
-  footer.gc-store-footer .gc-footer-brand img {
-    width:40px;
-    height:40px;
-  }
-  footer.gc-store-footer .gc-footer-brand strong {
-    font-size:.94rem;
-  }
-  footer.gc-store-footer .btn {
-    display:flex;
-    width:100%;
-    min-height:52px;
-    justify-content:space-between;
-    padding:8px 12px;
-    border-color:#e4dcd0;
-    border-radius:10px;
-    background:#fff;
-    color:#18543d;
-    font-size:.82rem;
-  }
 }
 
 .gc-payment-banks {
@@ -1368,9 +1278,6 @@ footer.gc-store-footer .btn {
 }
 .gc-bank-panel {
   box-shadow:0 20px 48px #17264238;
-}
-#bankTop {
-  min-height:44px;
 }
 
 .gc-search-filters[open] .gc-search-filter-fields {
@@ -1440,4 +1347,69 @@ footer.gc-store-footer .btn {
   .gc-category-picker .gc-category-choices {
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
+}
+
+footer.gc-store-footer {
+  margin-top:24px;
+  padding:0 0 env(safe-area-inset-bottom);
+  border-top:1px solid #dce4ee;
+  background:#fff;
+  color:#152642;
+}
+.gc-store-footer .container {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:5px 20px;
+  padding-block:12px;
+}
+.gc-footer-brand {
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.gc-footer-brand img {
+  flex:none;
+  width:36px;
+  height:36px;
+  object-fit:contain;
+}
+.gc-footer-brand strong {
+  display:block;
+  font-size:.9rem;
+  line-height:1.2;
+}
+.gc-footer-brand p {
+  margin:3px 0 0;
+  color:#52647a;
+  font-size:.76rem;
+  line-height:1.25;
+}
+.gc-footer-actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:0 4px;
+}
+.gc-footer-link {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:44px;
+  padding:0 9px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#344965;
+  font:inherit;
+  font-size:.82rem;
+  font-weight:700;
+  text-decoration:none;
+}
+.gc-footer-whatsapp {
+  color:#18543d;
+}
+.gc-footer-link:hover,.gc-footer-link:focus-visible {
+  background:#edf2f6;
 }
