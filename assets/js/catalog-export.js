@@ -184,6 +184,38 @@ async function drawPage(options,items,index,total){
  ctx.fillText((index+1)+' / '+total,width-margin,footerY);
  return {canvas,missing:photos.filter((image,i)=>!image&&items[i].photo).length};
 }
+async function drawCover(options, products, pageRange){
+ const canvas=document.createElement('canvas');
+ canvas.width=1200;canvas.height=1500;
+ const ctx=canvas.getContext('2d',{alpha:false});
+ const featured=products.filter(p=>p.photo).slice(0,3);
+ const [logo,photos,marks]=await Promise.all([loadImage(options.logo),Promise.all(featured.map(p=>productImage(p.photo).then(img=>img||productImage(p.photoFallback)))),markAssets(options.watermark,options.logo)]);
+ const gradient=ctx.createLinearGradient(0,0,1200,1500);
+ gradient.addColorStop(0,'#101e35');gradient.addColorStop(1,'#213d63');
+ ctx.fillStyle=gradient;ctx.fillRect(0,0,1200,1500);
+ ctx.fillStyle='#f34a63';ctx.fillRect(56,236,100,8);
+ if(logo)picture(ctx,logo,56,52,112,112);
+ ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.font='800 32px system-ui';
+ ctx.fillText('GAMER COMAYAGUA',logo?192:56,92);
+ ctx.font='850 77px system-ui';
+ lines(ctx,options.title,1088,2).forEach((line,i)=>ctx.fillText(line,56,280+i*90,1088));
+ ctx.fillStyle='#dce7f5';ctx.font='600 30px system-ui';
+ ctx.fillText(products.length+' productos disponibles · Envíos a toda Honduras',56,488,1088);
+ const visible=photos.filter(Boolean);
+ const cardWidth=(1088-Math.max(0,visible.length-1)*18)/Math.max(1,visible.length);
+ visible.forEach((photo,i)=>{
+  const x=56+i*(cardWidth+18);
+  roundBox(ctx,x,590,cardWidth,560,24,'#f4f7fc');
+  const area=picture(ctx,photo,x+14,604,cardWidth-28,532);
+  if(area)markPhoto(ctx,marks,area);
+ });
+ ctx.fillStyle='#fff';ctx.font='750 34px system-ui';
+ ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),56,1242);
+ ctx.fillStyle='#dce7f5';ctx.font='24px system-ui';
+ ctx.fillText(pageRange,56,1300);
+ ctx.fillText('Precios y existencias sujetos a confirmación',56,1370);
+ return canvas;
+}
 const blob=(canvas,type)=>new Promise((resolve,reject)=>canvas.toBlob(data=>data?resolve(data):reject(Error('El navegador no pudo crear el archivo.')),type,.9));
 function makePdf(pages){
  const chunks=[],offsets=[0],encoder=new TextEncoder();let length=0;
@@ -236,10 +268,11 @@ function open(options){
  <label>Título<input id="gcExportTitle" maxlength="90"></label>
  <label>Distribución<select id="gcExportSize"><option value="auto">Automática</option><option value="2">2 por página · fotos grandes</option><option value="4">4 por página</option><option value="6">6 por página</option><option value="9">9 por página</option></select></label>
  <label><input id="gcExportPrices" type="checkbox" checked> Mostrar precios</label>
- <label><input id="gcExportOut" type="checkbox"> Incluir agotados</label>
+ <label id="gcExportCoverField"><input id="gcExportCover" type="checkbox" checked> Portada en el PDF</label>
  <label><input id="gcExportMark" type="checkbox" checked> Marca de agua</label>
  <label>Páginas<select id="gcExportPage"></select></label><p id="gcExportStatus" role="status"></p>
  <div class="gc-export-buttons">
+ <button id="gcExportCopy" class="btn outline" type="button" hidden>Copiar enlace del catálogo</button>
  <a id="gcExportPng" class="btn red" hidden>Descargar PNG</a>
  <button id="gcExportPdf" class="btn outline" type="button" disabled>Preparar PDF</button>
  <button id="gcExportOriginal" class="btn outline" type="button" hidden>Imprimir con fotos originales</button>
@@ -252,21 +285,22 @@ function open(options){
  const original=$('Original');
  const png=$('Png'),pdf=$('Pdf'),pdfLink=$('PdfLink'),share=$('Share'),view=$('View');
  const categoryMode=options.source==='category',single=options.source==='product';
- root.querySelector('h2').textContent=single?'Ficha para compartir':categoryMode?'Compartir categoría o búsqueda':'Catálogo de productos seleccionados';
- $('Group').hidden=!categoryMode;$('Out').checked=single;
+ root.querySelector('h2').textContent=single?'Ficha para compartir':categoryMode?'Catálogo para compartir':'Catálogo de productos seleccionados';
+ $('Group').hidden=!categoryMode;$('CoverField').hidden=single;$('Copy').hidden=!categoryMode;
  if(categoryMode){
+  source.add(new Option('Catálogo completo','all'));
   source.add(new Option(options.query?'Resultados de «'+options.query+'»':'Resultados actuales','result'));
   options.categories.forEach(name=>source.add(new Option(name,'category:'+name)));
-  source.value=options.query||!options.category?'result':'category:'+options.category;
+  source.value=options.query||options.subcategory?'result':options.category?'category:'+options.category:'all';
  }
- let version=0,requestTimer,urls=[],pngFile,pdfFile,plan=[],activeOptions;
+ let version=0,requestTimer,urls=[],pngFile,pdfFile,plan=[],activeOptions,exportItems=[];
  const clearLinks=()=>{
   urls.forEach(url=>URL.revokeObjectURL(url));urls=[];
   png.hidden=pdfLink.hidden=share.hidden=view.hidden=original.hidden=true;stage.hidden=true;pdf.disabled=true;
   pngFile=pdfFile=null;
  };
- const titleFor=()=>single?options.selected[0].name:options.source==='selected'?(options.query?'Selección · '+options.query:'Productos seleccionados'):source.value.startsWith('category:')?source.value.slice(9):options.query||options.category||'Catálogo de productos';
- const sourceProducts=()=>categoryMode?(source.value.startsWith('category:')?options.byCategory(source.value.slice(9)):options.results()):options.getSelected?options.getSelected():options.selected;
+ const titleFor=()=>categoryMode&&source.value==='all'?'Catálogo general':single?options.selected[0].name:options.source==='selected'?(options.query?'Selección · '+options.query:'Productos seleccionados'):source.value.startsWith('category:')?source.value.slice(9):options.query||options.category||'Catálogo de productos';
+ const sourceProducts=()=>categoryMode?(source.value==='all'?options.allProducts():source.value.startsWith('category:')?options.byCategory(source.value.slice(9)):options.results()):options.getSelected?options.getSelected():options.selected;
  function filename(suffix){return 'Gamer-Comayagua-'+clean(title.value)+suffix;}
  function link(control,data,name){
   const url=URL.createObjectURL(data);urls.push(url);control.href=url;control.download=name;control.hidden=false;return url;
@@ -282,14 +316,17 @@ function open(options){
    requestTimer=setTimeout(()=>refresh(reset),950);
    return;
   }
-  const items=sourceProducts().filter(p=>$('Out').checked||!p.soldOut);
+  const items=sourceProducts().filter(p=>single||(!p.soldOut&&p.stock!==null&&p.price!==null));
+  if(categoryMode&&source.value==='all')items.sort((a,b)=>options.categoryLabel(a).localeCompare(options.categoryLabel(b),'es'));
+  exportItems=items;
   const size=$('Size').value==='auto'?Math.min(6,Math.max(1,items.length)):Number($('Size').value);
   plan=pagePlan(items,size);
   if(reset){
    page.replaceChildren(...plan.map((_,i)=>new Option('Página '+(i+1)+' de '+plan.length,String(i))));
   }
-  if(!plan.length){status.textContent='No hay productos para este catálogo.';return;}
+  if(!plan.length){status.textContent='No hay productos con existencias confirmadas para esta selección.';return;}
   const index=Number(page.value)||0;
+  const span=plan.length<=24?24:8;
   activeOptions={...options,title:title.value.trim()||titleFor(),prices:$('Prices').checked,watermark:$('Mark').checked?{...options.getWatermark(),enabled:true}:null};
   original.hidden=false;
   status.textContent='Preparando fotos de la página '+(index+1)+'…';
@@ -302,7 +339,7 @@ function open(options){
    pngFile=new File([data],name,{type:'image/png'});
    const url=link(png,data,name);stage.src=url;stage.hidden=false;view.href=url;view.hidden=false;
    pdf.disabled=false;
-   pdf.textContent=plan.length>8?'Preparar PDF · páginas '+(Math.floor(index/8)*8+1)+'–'+Math.min(plan.length,Math.floor(index/8)*8+8):'Preparar PDF';
+   pdf.textContent=plan.length>span?'Preparar PDF · páginas '+(Math.floor(index/span)*span+1)+'–'+Math.min(plan.length,Math.floor(index/span)*span+span):'Preparar PDF';
    setShare(pngFile);
    status.textContent=items.length+(items.length===1?' producto':' productos')+' · '+plan.length+(plan.length===1?' página':' páginas')+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
   }catch(error){if(ticket===version)status.textContent=error.message;}
@@ -312,9 +349,16 @@ function open(options){
   if(!printOriginal(activeOptions,plan,start,end))status.textContent='Permití ventanas emergentes para abrir la versión para imprimir.';
  };
  pdf.onclick=async()=>{
-  const ticket=version,index=Number(page.value)||0,start=Math.floor(index/8)*8,end=Math.min(start+8,plan.length),pages=[];
+  const span=plan.length<=24?24:8;
+  const ticket=version,index=Number(page.value)||0,start=Math.floor(index/span)*span,end=Math.min(start+span,plan.length),pages=[];
   pdf.disabled=true;pdfLink.hidden=true;
   try{
+   if(!single&&$('Cover').checked){
+    status.textContent='Preparando portada…';
+    const cover=await drawCover(activeOptions,exportItems,'Páginas de productos '+(start+1)+' a '+end+' de '+plan.length);
+    pages.push({jpeg:new Uint8Array(await (await blob(cover,'image/jpeg')).arrayBuffer()),width:cover.width,height:cover.height});
+    cover.width=cover.height=1;
+   }
    for(let i=start;i<end;i++){
     if(ticket!==version||!root.isConnected)return;
     status.textContent='Preparando PDF · página '+(i+1)+' de '+end+'…';
@@ -323,7 +367,7 @@ function open(options){
     canvas.width=canvas.height=1;
    }
    if(ticket!==version||!root.isConnected)return;
-   const data=makePdf(pages),name=filename((plan.length>8?'-'+(start+1)+'-'+end:'')+'.pdf');
+   const data=makePdf(pages),name=filename((plan.length>span?'-'+(start+1)+'-'+end:'')+'.pdf');
    pdfFile=new File([data],name,{type:'application/pdf'});link(pdfLink,data,name);setShare(pdfFile);
    status.textContent='PDF listo para guardar o compartir.';
   }catch(error){if(ticket===version)status.textContent=error.message;}
@@ -335,9 +379,14 @@ function open(options){
   try{await navigator.share({files:[file],title:title.value});}
   catch(error){if(error.name!=='AbortError')status.textContent='Descargá el archivo para adjuntarlo en WhatsApp.';}
  };
+ $('Copy').onclick=async()=>{
+  const url=options.publicLink(source.value);
+  try{await navigator.clipboard.writeText(url);status.textContent='Enlace copiado';}
+  catch(error){window.prompt('Copiá el enlace del catálogo',url);}
+ };
  source.onchange=()=>{title.value=titleFor();refresh();};
  page.onchange=()=>refresh(false);
- ['Size','Prices','Out','Mark'].forEach(id=>$(id).onchange=()=>refresh());
+ ['Size','Prices','Cover','Mark'].forEach(id=>$(id).onchange=()=>refresh());
  title.oninput=()=>{clearTimeout(requestTimer);++version;clearLinks();requestTimer=setTimeout(()=>refresh(false),280);};
  title.value=titleFor();options.show(root);refresh();
  const observer=new MutationObserver(()=>{
