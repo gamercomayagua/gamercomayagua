@@ -1021,3 +1021,17 @@ body{
 .gc-detail-meta .gc-stock-line.is-in {background:#e1f2e9;color:#14634a;}
 .gc-detail-meta .gc-stock-line.is-out {background:#f7e4e8;color:#8e2337;}
 .gc-detail-amount {min-width:0;}
+
+footer.gc-store-footer {padding-block:14px;background:#edf1f6;}
+footer.gc-store-footer .container {justify-content:space-between;text-align:left;}
+footer.gc-store-footer .gc-footer-brand img {width:36px;height:36px;}
+footer.gc-store-footer .gc-footer-brand strong {display:block;color:#152642;font-size:.86rem;}
+footer.gc-store-footer .gc-footer-brand p {font-size:.76rem;}
+footer.gc-store-footer .btn {background:#fff;font-size:.78rem;padding:7px 10px;}
+.gc-detail-compact .gc-product-payments {padding:11px 12px;background:#f7f8fa;}
+.gc-product-payments .gc-payment-caption {margin:0 0 7px;color:#52647d;font-size:.79rem;}
+.gc-product-payments .gc-paygrid {gap:0;}
+.gc-product-payments .gc-payrow {border:0;border-top:1px solid #dce5f0;border-radius:0;background:transparent;padding:8px 2px;}
+.gc-product-payments .gc-payrow .gc-tigo-fee {border:0;padding-top:0;}
+.gc-detail-compact .gc-product-toolbar .gc-add,.gc-detail-compact .gc-product-toolbar .gc-whatsapp {grid-column:auto;}
+.gc-detail-compact .gc-product-toolbar .gc-share-link,.gc-detail-compact .gc-product-toolbar .btn:last-child:not(.gc-whatsapp) {background:#fff;}

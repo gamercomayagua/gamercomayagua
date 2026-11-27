@@ -507,7 +507,7 @@ function detail(p){
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-meta"><div class="gc-detail-amount"><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div></div></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><div class="gc-detail-actions gc-product-toolbar"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-meta"><div class="gc-detail-amount"><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div></div></div><section class="gc-detail-more gc-product-payments"><h3>Pago</h3><p class="gc-payment-caption">Totales con envío nacional</p>'+paymentRows(q)+'</section><div class="gc-detail-actions gc-product-toolbar"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  handlePhotoError(box.querySelector('.gc-product-image'),p);
  if(p.soldOut)box.classList.add('gc-soldout-detail');
@@ -533,7 +533,7 @@ function detail(p){
   try{
    if(!catalogReady){toast('Esperá a que se cargue el catálogo.');return;}
    const product=all.find(function(item){return item.id===p.id;})||p;
-   await window.GC_EXPORT.downloadProduct(product,{logo:logoUrl(),watermark:store.watermark,phone:PHONE,money:money,stockText:stockText});
+   await window.GC_EXPORT.downloadProduct(product,{logo:logoUrl(),watermark:store.watermark,phone:PHONE,money:money,stockText:stockText,productCode:productCodes[product.id]});
   }catch(error){toast(error.message||'No se pudo guardar la imagen');}
   finally{download.disabled=false;download.textContent='Imagen';}
  };
@@ -1025,7 +1025,7 @@ function openCatalog(source,product){
    }
    return url.href;
   },byCategory:function(name){return all.filter(function(p){return categoryMatches(p,name);});},
-  logo:logoUrl(), getWatermark:function(){return store.watermark;}, phone:PHONE, money:money, stockText:stockText,
+  logo:logoUrl(), getWatermark:function(){return store.watermark;}, phone:PHONE, money:money, stockText:stockText, productCode:source==='product'?productCodes[product.id]:null,
   canExport:function(){return catalogReady;},
   show:function(root){open(root,'catalogue');},close:close
  });

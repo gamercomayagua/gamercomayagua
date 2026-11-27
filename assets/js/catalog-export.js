@@ -154,7 +154,12 @@ async function drawVerticalProduct(options,product){
  roundBox(ctx,badgeX+left+18,y,right,59,16,'#e8e1d8');
  ctx.fillStyle=availability[1];ctx.fillText(stock,badgeX+left/2,y+12,left-22);
  ctx.fillStyle='#514944';ctx.fillText(reference,badgeX+left+18+right/2,y+12,right-22);
- const contactY=y+111;
+ if(options.productCode){
+  const code=String(options.productCode).toUpperCase().replace(/V(?=\d)/g,'B');
+  ctx.fillStyle='#514944';ctx.font='700 27px ui-monospace,monospace';
+  ctx.fillText(code,540,y+70,936);
+ }
+ const contactY=1740;
  roundBox(ctx,72,contactY,936,88,44,'#272321');
  ctx.fillStyle='#fff';ctx.font='800 37px system-ui';
  ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),540,contactY+20,866);
