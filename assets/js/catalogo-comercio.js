@@ -629,16 +629,31 @@ function printQuote(items,q,comparative){
  win.document.open();win.document.write(full);win.document.close();
 }
 function showBankAccounts(root){
+ var accounts=[
+  ['BAC Honduras','755925871'],['Banco Atlántida','2020666940'],['Banco Azteca','75080117613318'],
+  ['Banco de Occidente','217020233253'],['Banco Ficohsa','200021495637']
+ ];
+ var holder='Renee Gabriel Guerrero Coello';
  var panel=document.createElement('dialog');panel.className='gc-bank-panel';
  panel.setAttribute('aria-labelledby','gcBankHeading');
- panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos de transferencia</h2><p>Gamer Comayagua</p></div>'+
-  '<button class="btn outline" type="button" aria-label="Cerrar datos de transferencia">✕</button></header>'+
-  '<div class="gc-bank-content"><p>Solicitá la cuenta de pago por WhatsApp y confirmá el monto de tu pedido.</p>'+
-  '<a class="btn gc-bank-copy" href="https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola, ¿me comparten los datos para pagar por transferencia?')+'" target="_blank" rel="noopener">Solicitar datos por WhatsApp</a></div>';
- panel.querySelector('header button').onclick=function(){panel.close();};
+ panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos bancarios</h2><p>Gamer Comayagua</p></div>'+
+  '<form method="dialog"><button class="btn outline" aria-label="Cerrar datos bancarios">×</button></form></header>'+
+  '<div class="gc-bank-content"><p><strong>Titular</strong><br>'+holder+'</p><dl>'+
+  accounts.map(function(account){return '<div><dt>'+account[0]+'</dt><dd>'+account[1]+'</dd></div>';}).join('')+
+  '</dl><p>Confirmá la cuenta y el monto con la tienda antes de transferir.</p>'+
+  '<button type="button" class="btn gc-bank-copy">Copiar datos bancarios</button><p role="status" class="gc-bank-status"></p></div>';
+ panel.querySelector('.gc-bank-copy').onclick=async function(){
+  var status=panel.querySelector('.gc-bank-status');
+  try{
+   await navigator.clipboard.writeText(['Gamer Comayagua','Titular: '+holder].concat(accounts.map(function(account){return account.join(': ');})).join('\n'));
+   status.textContent='Datos bancarios copiados.';
+  }catch(error){status.textContent='Podés seleccionar los datos y copiarlos manualmente.';}
+ };
  panel.addEventListener('close',function(){panel.remove();});
- root.appendChild(panel);panel.showModal();
+ root.appendChild(panel);
+ panel.showModal();
 }
+$('bankTop').onclick=function(){showBankAccounts(document.body);};
 function cartView(refresh){
  var previous=refresh===true?customerData(true):null;
  var removed=previous?cartView.removed:null;
@@ -677,7 +692,7 @@ function cartView(refresh){
  <section class="gc-section" id="gcPaymentSection"><h3>Forma de pago</h3>
   <div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div>
   <dl id="gcPriceBreakdown" class="gc-price-breakdown"></dl>
-  <p id="gcSelectedTotal" class="gc-payment-note"></p>
+  <p id="gcSelectedTotal" class="gc-payment-note"></p><button type="button" id="gcPaymentBanks" class="btn outline gc-payment-banks">Ver cuentas bancarias</button>
   <details class="gc-cart-compare" id="gcPaymentCompare"><summary>Comparar las formas de pago</summary><div id="gcCompare"></div></details>
  </section>
  <section class="gc-section" id="gcQuoteTools"><h3>PDF y otras acciones</h3>
@@ -821,7 +836,7 @@ function openQuote(comparative){
 }
 root.querySelector('#gcPrint').onclick=function(){openQuote(false);};
 root.querySelector('#gcPrintCompare').onclick=function(){openQuote(true);};
-root.querySelector('#gcBank').onclick=function(){showBankAccounts(root);};
+['gcBank','gcPaymentBanks'].forEach(function(id){root.querySelector('#'+id).onclick=function(){showBankAccounts(root);};});
 var cartTabs=Array.from(root.querySelectorAll('[data-cart-target]'));
 var activeTab=previousTab||'gcItemsSection';
 var nextSteps={
@@ -1107,7 +1122,7 @@ if(typeof categoryPicker.showModal==='function'){
   categoryLookup.value='';
   renderCategoryChoices();
   categoryPicker.showModal();
-  categoryLookup.focus();
+
  };
  categoryLookup.oninput=renderCategoryChoices;
  categoryPicker.addEventListener('close',function(){categoryTrigger.focus({preventScroll:true});});
