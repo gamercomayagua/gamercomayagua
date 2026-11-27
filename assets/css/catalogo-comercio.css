@@ -978,3 +978,6 @@ body{
   font:600 .83rem/1.4 ui-monospace,monospace;
   overflow-wrap:anywhere;
 }
+
+#subcategoryField { min-width:0;font-size:.85rem;font-weight:700;color:#334965; }
+#subcategoryField select { display:block;width:100%;margin-top:3px;min-height:44px; }
