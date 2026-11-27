@@ -227,7 +227,7 @@ function applyLogo(){
  var url=logoUrl(),target=$('brandLogo');
  if(url)target.src=url;
 }
-async function shareStoreLink(type,key,title){
+async function storeShareUrl(type,key){
  sharePages=sharePages||fetch('data/enlaces.json'+catalogRevision).then(function(response){
   if(!response.ok)throw new Error('Enlaces no disponibles');
   return response.json();
@@ -239,6 +239,10 @@ async function shareStoreLink(type,key,title){
   url.searchParams.set(type,key);
   if(type==='categoria')url.hash='catalogo';
  }
+ return url.href;
+}
+async function shareStoreLink(type,key,title){
+ var url=new URL(await storeShareUrl(type,key));
  if(navigator.share){
   try{await navigator.share({title:title+' | Gamer Comayagua',url:url.href});return;}
   catch(error){if(error.name==='AbortError')return;}
@@ -503,12 +507,21 @@ function detail(p){
  var image=photoMarkup(p).replace('loading="lazy"','loading="eager"');
  var description=p.description&&norm(p.description)!==norm(p.name)?'<p>'+esc(p.description)+'</p>':'';
  var reference='<p class="gc-detail-ref">Ref. '+esc(p.ref)+(p.code&&p.code!==p.ref?' · Código: '+esc(p.code):'')+'</p>';
- var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><div class="gc-detail-actions gc-product-toolbar"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
+ var box=wrap('<div class="gc-detail-compact"><div class="gc-detail-image">'+image+'</div><div class="gc-detail-head"><h2>'+esc(p.name)+'</h2><div class="gc-detail-price">'+(p.soldOut?'AGOTADO':productPrice(p))+'</div>'+(productCodes[p.id]?'<code class="gc-detail-code">'+esc(productCodes[p.id])+'</code>':'')+promoBadge(p)+'</div><div class="gc-detail-info">'+(p.freeShipping?'<div class="gc-detail-free">Envío gratis</div>':'')+'<p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p></div><section class="gc-detail-more gc-product-payments"><h3>Formas de pago con envío nacional</h3>'+paymentRows(q)+'</section><div class="gc-detail-actions gc-product-toolbar"><button type="button" class="btn red gc-add" '+(p.soldOut||p.price===null?'disabled':'')+'>Añadir al carrito</button><a class="btn outline gc-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div><details class="gc-detail-more gc-detail-extra"><summary>Descripción y opciones para compartir</summary>'+reference+description+'<div class="gc-detail-actions"><button type="button" class="btn outline gc-share-ficha">Guardar ficha en PNG o PDF</button></div></details></div>');
 
  handlePhotoError(box.querySelector('.gc-product-image'),p);
  if(p.soldOut)box.classList.add('gc-soldout-detail');
  box.querySelector('.gc-add').onclick=function(){add(p);};
- box.querySelector('.gc-whatsapp').href='https://wa.me/'+PHONE+'?text='+encodeURIComponent('Hola Gamer Comayagua. Quiero consultar por '+p.name+' (ref. '+p.ref+'). Precio de tienda: '+money(p.price)+'. ¿Hay disponibilidad?');
+ var whatsapp=box.querySelector('.gc-whatsapp');
+ var direct=new URL('./',location.href);
+ direct.searchParams.set('producto',p.id);
+ function whatsappUrl(link){
+  var message=['Hola, Gamer Comayagua. Quisiera cotizar este producto:','','*'+p.name+'*','Precio: '+money(p.price),'Ref. '+p.ref,'',link].join('\n');
+  return 'https://wa.me/'+PHONE+'?text='+encodeURIComponent(message);
+ }
+ whatsapp.href=whatsappUrl(direct.href);
+ storeShareUrl('producto',p.id).then(function(link){whatsapp.href=whatsappUrl(link);}).catch(function(){});
+
  box.querySelector('.gc-share-ficha').onclick=function(){openCatalog('product',p);};
  var share=wrap('<button type="button" class="btn outline gc-share-link">Enlace</button>').firstElementChild;
  share.onclick=function(){shareStoreLink('producto',p.id,p.name);};
@@ -741,7 +754,7 @@ function itemRender(){
  root.querySelector('#gcCartScroll').classList.toggle('gc-cart-empty',!items.length);
  if(!items.length){
   root.querySelector('#gcItemsSection').hidden=false;
-  itemsBox.innerHTML='<div class="gc-cart-empty-message"><p>Tu cotización está vacía.</p><a class="btn outline" href="#catalogo">Explorar productos</a></div>';
+  itemsBox.innerHTML='<div class="gc-cart-empty-message"><strong>Tu cotización está vacía</strong><p>Abrí un producto y tocá Añadir para preparar tu cotización.</p><a class="btn outline" href="#catalogo">Explorar productos</a></div>';
   itemsBox.querySelector('a').addEventListener('click',close);return;
  }
  items.forEach(function(i,index){
