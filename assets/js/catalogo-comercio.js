@@ -629,24 +629,39 @@ function printQuote(items,q,comparative){
  win.document.open();win.document.write(full);win.document.close();
 }
 function showBankAccounts(root){
- var accounts=[
-  ['BAC Honduras','755925871'],['Banco Atlántida','2020666940'],['Banco Azteca','75080117613318'],
-  ['Banco de Occidente','217020233253'],['Banco Ficohsa','200021495637']
+ var groups=[
+  {title:'Cuentas bancarias',rows:[
+   ['Banpaís','213450118392'],['BAC Honduras','755925871'],['Banco Atlántida','2020666940'],
+   ['Banco Ficohsa','200021495637'],['Banco de Occidente','217020233253'],
+   ['Banco Azteca','75080117613318'],['Banrural','500840002420']
+  ]},
+  {title:'Billeteras electrónicas',rows:[
+   ['Kash','gabrielguerrerohn'],['Tengo','9474-6828']
+  ]},
+  {title:'Tigo Money',rows:[
+   ['Número','9474-6828'],['DNI','0301-1993-03922']
+  ]}
  ];
  var holder='Renee Gabriel Guerrero Coello';
  var panel=document.createElement('dialog');panel.className='gc-bank-panel';
  panel.setAttribute('aria-labelledby','gcBankHeading');
- panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos bancarios</h2><p>Gamer Comayagua</p></div>'+
-  '<form method="dialog"><button class="btn outline" aria-label="Cerrar datos bancarios">×</button></form></header>'+
-  '<div class="gc-bank-content"><p><strong>Titular</strong><br>'+holder+'</p><dl>'+
-  accounts.map(function(account){return '<div><dt>'+account[0]+'</dt><dd>'+account[1]+'</dd></div>';}).join('')+
-  '</dl><p>Confirmá la cuenta y el monto con la tienda antes de transferir.</p>'+
-  '<button type="button" class="btn gc-bank-copy">Copiar datos bancarios</button><p role="status" class="gc-bank-status"></p></div>';
+ panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos de pago</h2><p>Gamer Comayagua</p></div>'+
+  '<form method="dialog"><button class="btn outline" aria-label="Cerrar datos de pago">×</button></form></header>'+
+  '<div class="gc-bank-content"><p class="gc-bank-holder"><span>Titular</span><strong>'+holder+'</strong></p>'+
+  groups.map(function(group){
+   return '<section class="gc-bank-group"><h3>'+group.title+'</h3><dl>'+
+    group.rows.map(function(row){return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd></div>';}).join('')+
+    '</dl></section>';
+  }).join('')+
+  '<button type="button" class="btn gc-bank-copy">Copiar datos de pago</button><p role="status" class="gc-bank-status"></p></div>';
  panel.querySelector('.gc-bank-copy').onclick=async function(){
   var status=panel.querySelector('.gc-bank-status');
+  var lines=['Gamer Comayagua','Titular: '+holder].concat(groups.flatMap(function(group){
+   return ['',group.title].concat(group.rows.map(function(row){return row.join(': ');}));
+  }));
   try{
-   await navigator.clipboard.writeText(['Gamer Comayagua','Titular: '+holder].concat(accounts.map(function(account){return account.join(': ');})).join('\n'));
-   status.textContent='Datos bancarios copiados.';
+   await navigator.clipboard.writeText(lines.join('\n'));
+   status.textContent='Datos de pago copiados.';
   }catch(error){status.textContent='Podés seleccionar los datos y copiarlos manualmente.';}
  };
  panel.addEventListener('close',function(){panel.remove();});
@@ -692,11 +707,11 @@ function cartView(refresh){
  <section class="gc-section" id="gcPaymentSection"><h3>Forma de pago</h3>
   <div class="gc-pay-choices"><label><input type="radio" name="gcPayment" value="transfer"> Transferencia</label><label><input type="radio" name="gcPayment" value="tigo"> Tigo Money</label><label><input type="radio" name="gcPayment" value="cod"> Pagar al recibir</label></div>
   <dl id="gcPriceBreakdown" class="gc-price-breakdown"></dl>
-  <p id="gcSelectedTotal" class="gc-payment-note"></p><button type="button" id="gcPaymentBanks" class="btn outline gc-payment-banks">Ver cuentas bancarias</button>
+  <p id="gcSelectedTotal" class="gc-payment-note"></p><button type="button" id="gcPaymentBanks" class="btn outline gc-payment-banks">Ver datos de pago</button>
   <details class="gc-cart-compare" id="gcPaymentCompare"><summary>Comparar las formas de pago</summary><div id="gcCompare"></div></details>
  </section>
  <section class="gc-section" id="gcQuoteTools"><h3>PDF y otras acciones</h3>
-  <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Cotización en PDF<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparativa en PDF<small>3 formas de pago</small></button><button type="button" id="gcBank" class="btn outline">Datos de transferencia</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
+  <div class="gc-cart-actions"><button type="button" id="gcPrint" class="btn gc-quote-button">Cotización en PDF<small>Pago seleccionado</small></button><button type="button" id="gcPrintCompare" class="btn gc-quote-button">Comparativa en PDF<small>3 formas de pago</small></button><button type="button" id="gcBank" class="btn outline">Datos de pago</button><button type="button" id="gcClear" class="btn outline">Vaciar carrito</button></div>
  </section>
  <section class="gc-section" id="gcReviewSection" hidden>
   <h3>Revisá tu cotización</h3>

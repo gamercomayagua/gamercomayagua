@@ -1413,3 +1413,39 @@ footer.gc-store-footer {
 .gc-footer-link:hover,.gc-footer-link:focus-visible {
   background:#edf2f6;
 }
+
+.gc-bank-panel header h2 {
+  margin:0;
+}
+.gc-bank-content .gc-bank-holder {
+  display:grid;
+  gap:2px;
+  margin:0 0 17px;
+  padding:11px 12px;
+  border-radius:10px;
+  background:#f1f4f9;
+}
+.gc-bank-holder span {
+  color:#52647a;
+  font-size:.75rem;
+}
+.gc-bank-group {
+  margin-bottom:14px;
+}
+.gc-bank-group h3 {
+  margin:0 0 5px;
+  font-size:.88rem;
+}
+.gc-bank-group dl {
+  margin:0;
+}
+.gc-bank-group dd {
+  font-variant-numeric:tabular-nums;
+}
+.gc-bank-content .gc-bank-copy {
+  width:100%;
+  margin:0;
+}
+.gc-bank-status:empty {
+  display:none;
+}
