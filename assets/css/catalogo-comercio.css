@@ -1157,3 +1157,101 @@ footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;
     color:#18543d;
   }
 }
+
+@media (max-width:650px) {
+  #catalogo .resultshead {
+    margin:14px 0 2px;
+  }
+  #catalogo .gc-catalog-options {
+    margin-bottom:10px;
+  }
+  #catalogo .gc-catalog-tools {
+    gap:4px 12px;
+    margin:0;
+  }
+  #catalogo .gc-catalog-tools .btn.outline {
+    flex:0 1 auto;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:#344965;
+    font-size:.78rem;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  #catalogo .gc-catalog-tools [aria-pressed=true].btn.outline {
+    color:#9b2037;
+  }
+
+  #products {
+    gap:10px;
+  }
+  #products .product {
+    border-radius:14px;
+    box-shadow:0 2px 7px #17264208;
+  }
+  #products .product .details {
+    gap:5px;
+    padding:9px 10px 12px;
+  }
+  #products .product .category {
+    margin:0;
+    color:#52647a;
+    font-size:.66rem;
+    line-height:1.32;
+  }
+  #products .product .gc-product-title {
+    margin:0;
+    min-height:0;
+    font-size:clamp(.8rem,3.6vw,.95rem);
+    line-height:1.3;
+  }
+  #products .product .gc-product-price {
+    margin-top:auto;
+    padding-top:5px;
+    font-size:clamp(1rem,4.5vw,1.23rem);
+    line-height:1.2;
+  }
+  #products .product .gc-stock-line {
+    font-size:.73rem;
+    line-height:1.3;
+  }
+
+  #dialog[data-view=product] #dialogBody {
+    padding:10px 10px max(12px,env(safe-area-inset-bottom));
+  }
+  #dialog[data-view=product] .close {
+    top:12px;
+    right:12px;
+    border:1px solid #dce4ee;
+    background:#fff;
+    box-shadow:0 2px 8px #15264220;
+  }
+  .gc-detail-compact .gc-detail-head {
+    padding:12px 2px 0;
+  }
+  .gc-detail-compact .gc-detail-meta {
+    padding:10px;
+    border:1px solid #e4e9ef;
+  }
+  .gc-detail-compact .gc-product-payments {
+    margin-top:10px;
+    padding-block:8px;
+  }
+  .gc-detail-compact .gc-product-toolbar {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+    margin-block:10px;
+  }
+  .gc-detail-compact .gc-product-toolbar .btn {
+    padding-inline:4px;
+    font-size:clamp(.68rem,2.9vw,.81rem);
+    line-height:1.2;
+    white-space:normal;
+  }
+  .gc-detail-compact .gc-product-toolbar .gc-whatsapp {
+    border-color:#d3e7da;
+    background:#eaf4ee;
+    color:#18543d;
+  }
+}
