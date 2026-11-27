@@ -270,10 +270,50 @@ function promoBadge(p){
  return '<span class="gc-promo-badge'+(store.promoColor==='yellow'?' gc-promo-yellow':'')+'">'+label+'</span>';
 }
 function productPrice(p){return (p.regularPrice>p.price?'<del class="gc-old-price">'+money(p.regularPrice)+'</del> ':'')+money(p.price);}
+var categoryIndex=new WeakMap(),storeCategoryKeys=new Set();
+function categoryName(p){
+ if(categoryIndex.has(p))return categoryIndex.get(p);
+ var category=norm(p.category),sub=norm(p.subcategory),name=norm(p.name);
+ var groups=[
+  ['Navideño', /navidad|naviden|nacimiento naviden/.test(sub+' '+name)||category==='producto de temporada'&&/arbol.*luces|lluvia estilo arbol/.test(name)],
+  ['Escolar', sub==='escolar'],
+  ['Verano', sub==='verano'],
+  ['Cargadores', /cargador/.test(category+' '+sub)],
+  ['Cables y adaptadores', /(^| )(cables?|adaptador|otg)( |$)/.test(category+' '+sub)&&category!=='camaras y seguridad'],
+  ['Cobertores', sub==='cobertores'],
+  ['Protectores de pantalla', /^(vidrios|hidrogel)$/.test(sub)],
+  ['Audífonos y audio', /audifonos|microfonos/.test(sub)||category==='audio'],
+  ['Parlantes y bocinas', category==='parlantes'],
+  ['Gaming', /gamer|gaming|dedales|kit personalizado/.test(category)||/^(controles|video juego)$/.test(sub)],
+  ['Computación', /^(teclado|mouse|mousepad|coolers|memorias microsd)$/.test(category)||/accesorios para computadora|memorias|calculadoras/.test(sub)],
+  ['Accesorios para celulares', /accesorios para celulares/.test(category)||/^(soporte|celular)$/.test(category)],
+  ['Cámaras y seguridad', category==='camaras y seguridad'],
+  ['Cuidado personal', /^(cuidado personal|belleza)$/.test(category)],
+  ['Electrodomésticos', /^(electrodomesticos|lavadora)$/.test(category)],
+  ['Iluminación', category==='iluminacion'],
+  ['Relojes', /^reloj(es)?$/.test(category)],
+  ['Automotriz', category==='automotriz'||sub==='accesorios para carro'],
+  ['Cocina y comedor', /^(cocina|termos)$/.test(category)||category==='hogar'&&/cocina|ollas|sartenes|vajillas|plato|taza|vaso|bowl|termos|viandas|calderos/.test(sub)],
+  ['Mascotas', sub==='mascotas'],
+  ['Hogar', category==='hogar'],
+  ['Juguetes y entretenimiento', category==='entretenimiento'],
+  ['Temporada', category==='producto de temporada']
+ ];
+ var label=groups.find(function(group){return group[1];})?.[0]||'Tecnología y otros';
+ categoryIndex.set(p,label);
+ return label;
+}
+function categoryKey(value){
+ return norm(value).replace(/\bnavid(?:ad|en[oa]s?)\b/g,'navideno');
+}
+function categoryMatches(p,label){
+ var key=categoryKey(label);
+ return key===categoryKey(categoryName(p))||(!storeCategoryKeys.has(key)&&key===categoryKey(p.category));
+}
 var searchIndex=new WeakMap();
 function searchKey(value){return compact(value).replace(/(s[0-9]{2})ultra/g,'$1u');}
 function searchWords(value){
- return norm(value).replace(/\bs\s*(\d{2})\s*(?:ultra|u)\b/g,'s$1u')
+ return categoryKey(value).replace(/^categoria\s+/, '').replace(/\bs\s*(\d{2})\s*(?:ultra|u)\b/g,'s$1u')
   .replace(/(\d)\s+(?=w\b|mah\b|gb\b)/g,'$1').split(' ').filter(Boolean);
 }
 function searchScore(p,words,key){
@@ -281,7 +321,7 @@ function searchScore(p,words,key){
  if(!entry){
   var name=searchKey(p.name),codes=[p.sku,p.code,p.ref].map(searchKey);
   var primary=searchKey([p.name,p.sku,p.code,p.ref].join(' '));
-  entry={name:name,codes:codes,primary:primary,full:primary+searchKey([p.category,p.subcategory,p.description].join(' '))};
+  entry={name:name,codes:codes,primary:primary,full:primary+searchKey(categoryKey([categoryName(p),p.category,p.subcategory,p.description].join(' ')))};
   searchIndex.set(p,entry);
  }
  if(entry.name===key||entry.codes.includes(key))return 4;
@@ -298,11 +338,11 @@ function applySearch(){
  if(url.href!==location.href)history.replaceState(history.state,'',url.href);
  filter();
 }
-function selectCategory(){var select=$('category'),value=select.value,choices=[...new Set(all.map(function(p){return p.category;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'es');});select.replaceChildren(new Option('Todas las categorías',''));choices.forEach(function(x){select.add(new Option(x,x));});select.value=choices.includes(value)?value:'';}
+function selectCategory(){var select=$('category'),value=select.value,choices=[...new Set(all.map(categoryName).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'es');});storeCategoryKeys=new Set(choices.map(categoryKey));select.replaceChildren(new Option('Todas las categorías',''));choices.forEach(function(x){select.add(new Option(x,x));});if(value&&!choices.includes(value)&&all.some(function(p){return categoryMatches(p,value);}))select.add(new Option(value,value));select.value=Array.from(select.options).some(function(option){return option.value===value;})?value:'';}
 function filter(reset){
 var q=$('search').value.trim(),words=searchWords(q),key=words.join(''),cat=$('category').value,sort=$('sort').value,scores=new Map();
 listed=all.filter(function(p){
- if((onlyNew&&!recentProductIds.has(p.id))||(onlyOwn&&!p.own)||(onlyPromos&&(!p.promotion||p.soldOut))||(onlyAvailable&&(p.soldOut||p.stock===null))||(cat&&p.category!==cat))return false;
+ if((onlyNew&&!recentProductIds.has(p.id))||(onlyOwn&&!p.own)||(onlyPromos&&(!p.promotion||p.soldOut))||(onlyAvailable&&(p.soldOut||p.stock===null))||(cat&&!categoryMatches(p,cat)))return false;
  if(!key)return true;
  var score=searchScore(p,words,key);
  scores.set(p,score);
@@ -348,7 +388,7 @@ function render(){
  var fragment=document.createDocumentFragment();
  listed.slice(0,offset).forEach(function(p,index){
  var card=document.createElement('article');card.className='product'+(p.soldOut?' gc-soldout':'');
- card.innerHTML='<div class="photo gc-open-product" tabindex="0" role="button" aria-label="Ver '+esc(p.name)+'">'+(p.soldOut?'<span class="gc-sold-badge">AGOTADO</span>':p.freeShipping?'<span class="gc-free-badge">ENVÍO GRATIS</span>':'<span class="tag">'+esc(p.category||'TECNOLOGÍA')+'</span>')+photoMarkup(p)+'</div><div class="details"><p class="category">'+esc(p.subcategory||p.category||'Producto')+'</p>'+promoBadge(p)+'<button class="name gc-product-title gc-open-product" type="button">'+esc(p.name)+'</button><button class="price gc-product-price gc-open-product" type="button">'+(p.soldOut?'<span class="gc-out">AGOTADO</span>':productPrice(p))+'</button><p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><div class="actions gc-product-action"><button type="button" class="btn add" '+(p.soldOut||p.price===null?'disabled':'')+'>'+(p.soldOut?'Agotado':'＋ Añadir al carrito')+'</button></div></div>';
+ card.innerHTML='<div class="photo gc-open-product" tabindex="0" role="button" aria-label="Ver '+esc(p.name)+'">'+(p.soldOut?'<span class="gc-sold-badge">AGOTADO</span>':p.freeShipping?'<span class="gc-free-badge">ENVÍO GRATIS</span>':'<span class="tag">'+esc(categoryName(p))+'</span>')+photoMarkup(p)+'</div><div class="details"><p class="category">'+esc(p.subcategory||p.category||'Producto')+'</p>'+promoBadge(p)+'<button class="name gc-product-title gc-open-product" type="button">'+esc(p.name)+'</button><button class="price gc-product-price gc-open-product" type="button">'+(p.soldOut?'<span class="gc-out">AGOTADO</span>':productPrice(p))+'</button><p class="gc-stock-line '+(p.soldOut?'is-out':p.stock!==null?'is-in':'')+'">'+esc(stockText(p))+'</p><div class="actions gc-product-action"><button type="button" class="btn add" '+(p.soldOut||p.price===null?'disabled':'')+'>'+(p.soldOut?'Agotado':'＋ Añadir al carrito')+'</button></div></div>';
  if(selectingCatalog){
   var choice=document.createElement('label');choice.className='gc-catalog-choice';
   var check=document.createElement('input');check.type='checkbox';check.checked=selectedCatalog.has(p.id);
@@ -828,8 +868,10 @@ async function init(){
   $('ownOnly').hidden=!retained;
   if(!retained){onlyOwn=false;$('ownOnly').setAttribute('aria-pressed','false');}
   selectCategory();
-  if(requestedCategory&&all.some(function(product){return product.category===requestedCategory;})){
-   $('category').value=requestedCategory;
+  if(requestedCategory&&all.some(function(product){return categoryMatches(product,requestedCategory);})){
+   var choice=Array.from($('category').options).find(function(option){return categoryKey(option.value)===categoryKey(requestedCategory);});
+   if(!choice){choice=new Option(requestedCategory,requestedCategory);$('category').add(choice);}
+   $('category').value=choice.value;
    requestedCategory=null;
    $('catalogo').scrollIntoView({block:'start',behavior:'instant'});
   }
@@ -900,7 +942,7 @@ function openCatalog(source,product){
  var selected=source==='product'?[product]:source==='selected'?all.filter(function(p){return selectedCatalog.has(p.id);}):null;
  window.GC_EXPORT.open({
   source:source,selected:selected,getSelected:function(){if(source==='product')return [all.find(function(p){return p.id===product.id;})||product];return all.filter(function(p){return selectedCatalog.has(p.id);});},categories:choices,category:category,query:query,
-  results:function(){return listed;},byCategory:function(name){return all.filter(function(p){return p.category===name&&(!onlyOwn||p.own);});},
+  results:function(){return listed;},byCategory:function(name){return all.filter(function(p){return categoryMatches(p,name)&&(!onlyOwn||p.own);});},
   logo:logoUrl(), getWatermark:function(){return store.watermark;}, phone:PHONE, money:money, stockText:stockText,
   canExport:function(){return catalogReady;},
   show:function(root){open(root,'catalogue');},close:close
@@ -951,9 +993,9 @@ var categoryPicker=$('categoryPicker');
 if(typeof categoryPicker.showModal==='function'){
  var categorySelect=$('category'),categoryTrigger=$('categoryTrigger'),categoryLookup=$('categoryLookup');
  function renderCategoryChoices(){
-  var query=norm(categoryLookup.value);
+  var query=categoryKey(categoryLookup.value).replace(/^categoria\s+/, '');
   var options=Array.from(categorySelect.options).filter(function(option){
-   return norm(option.textContent).includes(query);
+   return categoryKey(option.textContent).includes(query);
   });
   $('categoryChoices').replaceChildren();
   options.forEach(function(option){
