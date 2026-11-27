@@ -1014,3 +1014,10 @@ body{
  .gc-detail-compact .gc-product-toolbar {grid-template-columns:repeat(4,minmax(0,1fr));}
  .gc-detail-compact .gc-product-toolbar .gc-add,.gc-detail-compact .gc-product-toolbar .gc-whatsapp {grid-column:auto;}
 }
+
+.gc-detail-meta {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;padding:10px 12px;margin-top:8px;border-radius:12px;background:#f5f7fb;}
+.gc-detail-meta .gc-detail-info {margin:0;min-width:0;}
+.gc-detail-meta .gc-stock-line {margin:0;padding:6px 10px;border-radius:8px;background:#e9edf3;}
+.gc-detail-meta .gc-stock-line.is-in {background:#e1f2e9;color:#14634a;}
+.gc-detail-meta .gc-stock-line.is-out {background:#f7e4e8;color:#8e2337;}
+.gc-detail-amount {min-width:0;}

@@ -143,9 +143,18 @@ async function drawVerticalProduct(options,product){
   ctx.fillText(options.money(product.price),540,y,980);
   y+=100;
  }
- ctx.fillStyle='#514944';ctx.font='600 29px system-ui';
- ctx.fillText(stockLabel(product,options.stockText)+'  ·  Ref. '+(product.ref||product.id),540,y,980);
- const contactY=Math.max(1690,y+54);
+ const stock=stockLabel(product,options.stockText);
+ const availability=product.soldOut?['#f9dfe3','#8e2337']:product.stock!=null?['#dceee3','#155638']:['#eee4cc','#665017'];
+ const reference='REF. '+String(product.ref||product.id).toUpperCase();
+ ctx.font='750 29px system-ui';
+ const left=Math.min(360,Math.ceil(ctx.measureText(stock).width)+52);
+ const right=Math.min(600,Math.ceil(ctx.measureText(reference).width)+52);
+ const badgeX=(1080-left-right-18)/2;
+ roundBox(ctx,badgeX,y,left,59,16,availability[0]);
+ roundBox(ctx,badgeX+left+18,y,right,59,16,'#e8e1d8');
+ ctx.fillStyle=availability[1];ctx.fillText(stock,badgeX+left/2,y+12,left-22);
+ ctx.fillStyle='#514944';ctx.fillText(reference,badgeX+left+18+right/2,y+12,right-22);
+ const contactY=y+111;
  roundBox(ctx,72,contactY,936,88,44,'#272321');
  ctx.fillStyle='#fff';ctx.font='800 37px system-ui';
  ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),540,contactY+20,866);
@@ -220,7 +229,7 @@ async function drawPage(options,items,index,total){
   ctx.textBaseline='middle';ctx.fillText(status,textX+16,statusY+20,textW-32);
   ctx.textBaseline='top';
   ctx.font='16px system-ui';ctx.fillStyle='#5b6d84';
-  ctx.fillText('Ref. '+(product.ref||product.id),textX,statusY+54,textW);
+  ctx.fillText('Ref. '+String(product.ref||product.id).toUpperCase(),textX,statusY+54,textW);
  });
  const footerY=top+gridH+45;
  ctx.fillStyle='#566980';ctx.font='18px system-ui';
