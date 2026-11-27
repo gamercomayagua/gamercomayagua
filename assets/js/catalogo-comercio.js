@@ -645,25 +645,41 @@ function showBankAccounts(root){
  var holder='Renee Gabriel Guerrero Coello';
  var panel=document.createElement('dialog');panel.className='gc-bank-panel';
  panel.setAttribute('aria-labelledby','gcBankHeading');
- panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos de pago</h2><p>Gamer Comayagua</p></div>'+
+ var copyValues=[];
+ function copyButton(label,value,context){
+  var index=copyValues.push(value)-1;
+  return '<button type="button" class="btn outline gc-bank-copy-one" data-copy="'+index+'" aria-label="'+esc(label+' · '+context)+'">'+label+'</button>';
+ }
+ var allText=['Gamer Comayagua','Titular: '+holder].concat(groups.flatMap(function(group){
+  return ['',group.title].concat(group.rows.map(function(row){return row.join(': ');}));
+ })).join('\n');
+ panel.innerHTML='<header><div><h2 id="gcBankHeading">Datos de pago</h2><p>Gamer Comayagua</p><p role="status" class="gc-bank-status"></p></div>'+
   '<form method="dialog"><button class="btn outline" aria-label="Cerrar datos de pago">×</button></form></header>'+
   '<div class="gc-bank-content"><p class="gc-bank-holder"><span>Titular</span><strong>'+holder+'</strong></p>'+
   groups.map(function(group){
    return '<section class="gc-bank-group"><h3>'+group.title+'</h3><dl>'+
-    group.rows.map(function(row){return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd></div>';}).join('')+
+    group.rows.map(function(row){
+     var tigo=group.title==='Tigo Money';
+     var context=tigo?group.title+' · '+row[0]:row[0];
+     var details=(tigo?group.title:row[0])+'\nTitular: '+holder;
+     var valueLabel=row[0]==='DNI'?'Copiar DNI':row[0]==='Kash'?'Copiar usuario':'Copiar número';
+     return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd><dd class="gc-bank-row-actions">'+
+      (row[0]==='DNI'?'':copyButton('Copiar nombre y titular',details,context))+
+      copyButton(valueLabel,row[1],context)+'</dd></div>';
+    }).join('')+
     '</dl></section>';
   }).join('')+
-  '<button type="button" class="btn gc-bank-copy">Copiar datos de pago</button><p role="status" class="gc-bank-status"></p></div>';
- panel.querySelector('.gc-bank-copy').onclick=async function(){
+  '<div class="gc-bank-share-actions">'+copyButton('Copiar todos',allText,'Datos de pago')+
+  '<a class="btn gc-bank-whatsapp" href="https://wa.me/?text='+encodeURIComponent(allText)+'" target="_blank" rel="noopener">Compartir por WhatsApp</a></div></div>';
+ panel.addEventListener('click',async function(event){
+  var button=event.target.closest('[data-copy]');
+  if(!button)return;
   var status=panel.querySelector('.gc-bank-status');
-  var lines=['Gamer Comayagua','Titular: '+holder].concat(groups.flatMap(function(group){
-   return ['',group.title].concat(group.rows.map(function(row){return row.join(': ');}));
-  }));
   try{
-   await navigator.clipboard.writeText(lines.join('\n'));
-   status.textContent='Datos de pago copiados.';
+   await navigator.clipboard.writeText(copyValues[Number(button.dataset.copy)]);
+   status.textContent=button.textContent.replace('Copiar ','Copiado: ')+'.';
   }catch(error){status.textContent='Podés seleccionar los datos y copiarlos manualmente.';}
- };
+ });
  panel.addEventListener('close',function(){panel.remove();});
  root.appendChild(panel);
  panel.showModal();

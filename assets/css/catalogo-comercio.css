@@ -1449,3 +1449,34 @@ footer.gc-store-footer {
 .gc-bank-status:empty {
   display:none;
 }
+
+.gc-bank-content .gc-bank-group dl > div {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px 9px;
+}
+.gc-bank-content .gc-bank-row-actions {
+  grid-column:1/-1;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  gap:5px;
+  user-select:auto;
+}
+.gc-bank-copy-one,.gc-bank-whatsapp {
+  min-height:44px;
+  padding:6px 9px;
+  font-size:.78rem;
+}
+.gc-bank-share-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.gc-bank-share-actions .btn {
+  flex:1 1 auto;
+}
+.gc-bank-share-actions .gc-bank-whatsapp {
+  background:#18543d;
+  color:#fff;
+}
