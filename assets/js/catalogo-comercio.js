@@ -7,6 +7,7 @@ var CONFIG={shipping:110,tigo:0.15,cod:0.15,codMin:350};
 var catalogReady=false;
 var onlyNew=false;
 var currentSupplierAdditions=[];
+var supplierStockSnapshot=null;
 var recentProductIds=new Set();
 var incomingLink=new URLSearchParams(location.search);
 var catalogRevision=new URL(document.currentScript.src).search;
@@ -24,6 +25,10 @@ function saveCart(){try{localStorage.setItem('gc-cart',JSON.stringify(cart));}ca
 function renderCounts(){var n=Object.values(cart).reduce(function(s,q){return s+q;},0);$('countTop').textContent=n;$('countFloat').textContent=n;}
 function toast(text){var t=$('toast');t.textContent=text;t.style.display='block';clearTimeout(toast.timeout);toast.timeout=setTimeout(function(){t.style.display='none';},2600);}
 function prepare(list){return (Array.isArray(list)?list:[]).filter(function(p){return p&&p.id&&p.name;}).map(function(p){
+ var freshStock=supplierStockSnapshot?.units[p.id];
+ if(Number.isInteger(freshStock)&&!p.own&&(p.stock==null||(p.stockVerifiedAt&&Date.parse(p.stockVerifiedAt)<Date.parse(supplierStockSnapshot.checkedAt)))){
+  p=Object.assign({},p,{stock:freshStock,stockVerifiedAt:supplierStockSnapshot.checkedAt});
+ }
  var sample=(window.GC_STOCK_SNAPSHOT||{})[p.id];
  if(!Object.prototype.hasOwnProperty.call(p,'stock')&&sample&&Date.now()-Date.parse(sample.verifiedAt)<86400000){
   p=Object.assign({},p,{stock:sample.units,stockVerifiedAt:sample.verifiedAt});
@@ -865,7 +870,11 @@ async function init(){
   });
   own=ownProducts(Array.from(current.values()),mirrors);updateCatalog();
  }).catch(function(){}).finally(function(){clearTimeout(timeout);});
- var supplierSnapshot=fetchStatic().then(function(rows){
+ var inventorySnapshot=fetch('data/stock-proveedor.json',{cache:'no-cache'}).then(function(response){
+  if(!response.ok)throw Error('Inventario no disponible');
+  return response.json();
+ }).then(function(data){supplierStockSnapshot=data;}).catch(function(){});
+ var supplierSnapshot=Promise.all([fetchStatic(),inventorySnapshot]).then(function([rows]){
   supplier=prepare(rows);updateCatalog();
   $('syncStatus').textContent='Catálogo Gamer Comayagua';
  }).catch(function(e){console.error(e);if(!all.length)$('resultCount').textContent='Catálogo no disponible';});
