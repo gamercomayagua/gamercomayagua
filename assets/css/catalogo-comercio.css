@@ -1255,3 +1255,109 @@ footer.gc-store-footer .btn {background:#fff;border-color:#dfd6cb;color:#8b2337;
     color:#18543d;
   }
 }
+
+.gc-footer-contact-text {
+  display:grid;
+  gap:2px;
+}
+.gc-footer-contact-text small {
+  font-size:.76rem;
+  font-weight:500;
+}
+footer.gc-store-footer .btn {
+  gap:14px;
+  text-align:left;
+}
+.gc-footer-contact-arrow {
+  font-size:1.05rem;
+}
+
+@media (max-width:650px) {
+  .gc-store-intro {
+    margin-bottom:10px;
+    background:#fff;
+    border-bottom:1px solid #e2e7ef;
+  }
+  .gc-store-intro-inner {
+    padding-block:0;
+  }
+  .gc-store-intro .gc-store-nav {
+    width:100%;
+    border-bottom:0;
+  }
+  .gc-store-intro .gc-store-nav a {
+    font-size:clamp(.68rem,2.9vw,.85rem);
+  }
+
+  #catalogo .gc-catalog-search {
+    border-radius:12px;
+    padding:3px 3px 3px 11px;
+  }
+  #catalogo .gc-catalog-search .btn {
+    min-height:44px;
+    border-radius:8px;
+    padding-inline:11px;
+  }
+  #catalogo .gc-search-filters summary {
+    min-height:52px;
+    border-radius:12px;
+    padding-inline:9px;
+  }
+  #catalogo .resultshead {
+    margin-top:16px;
+  }
+  #catalogo .gc-catalog-options {
+    margin-block:8px 12px;
+  }
+  #catalogo .gc-catalog-tools {
+    gap:5px;
+  }
+  #catalogo .gc-catalog-tools .btn {
+    flex:1 1 auto;
+    min-height:44px;
+    padding:6px 8px;
+    border-radius:9px;
+    font-size:.74rem;
+    text-align:center;
+  }
+  #catalogo .gc-catalog-tools .btn.outline {
+    border:1px solid #dce4ee;
+    background:#fff;
+    text-decoration:none;
+  }
+  #catalogo .gc-catalog-tools [aria-pressed=true].btn.outline {
+    background:#fbf0f2;
+    border-color:#e4b8c2;
+  }
+
+  footer.gc-store-footer {
+    padding-block:18px max(18px,env(safe-area-inset-bottom));
+    border-top-color:#e5ded4;
+    background:#f8f6f2;
+  }
+  footer.gc-store-footer .container {
+    gap:12px;
+  }
+  footer.gc-store-footer .gc-footer-brand {
+    gap:10px;
+  }
+  footer.gc-store-footer .gc-footer-brand img {
+    width:40px;
+    height:40px;
+  }
+  footer.gc-store-footer .gc-footer-brand strong {
+    font-size:.94rem;
+  }
+  footer.gc-store-footer .btn {
+    display:flex;
+    width:100%;
+    min-height:52px;
+    justify-content:space-between;
+    padding:8px 12px;
+    border-color:#e4dcd0;
+    border-radius:10px;
+    background:#fff;
+    color:#18543d;
+    font-size:.82rem;
+  }
+}
