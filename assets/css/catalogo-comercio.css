@@ -981,3 +981,12 @@ body{
 
 #subcategoryField { min-width:0;font-size:.85rem;font-weight:700;color:#334965; }
 #subcategoryField select { display:block;width:100%;margin-top:3px;min-height:44px; }
+
+@media(max-width:650px){
+ .gc-store-intro { background:transparent;border:0;margin-bottom:7px; }
+ .gc-store-intro-inner { padding-block:8px 0; }
+ .gc-store-intro-inner > div { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+ .gc-store-intro .gc-store-nav { background:#e8eef7;border-radius:12px;padding:3px;gap:2px; }
+ .gc-store-intro .gc-store-nav a { background:transparent;border-color:transparent; }
+ .gc-store-intro .gc-store-nav [aria-current=page] { background:#152642;color:#fff; }
+}

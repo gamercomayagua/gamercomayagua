@@ -108,6 +108,51 @@ function roundBox(ctx,x,y,w,h,r,fill,stroke){
 function stockLabel(product,stockText){
  return product.soldOut?'Agotado':stockText(product);
 }
+async function drawVerticalProduct(options,product){
+ const [logo,photo,marks]=await Promise.all([
+  loadImage(options.logo),
+  productImage(product.photo).then(img=>img||productImage(product.photoFallback)),
+  markAssets(options.watermark,options.logo)
+ ]);
+ const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920;
+ const ctx=canvas.getContext('2d',{alpha:false});
+ ctx.textBaseline='top';
+ const bg=ctx.createLinearGradient(0,0,1080,1920);
+ bg.addColorStop(0,'#101b31');bg.addColorStop(1,'#203e61');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,1080,1920);
+ ctx.fillStyle='#fa4b62';ctx.fillRect(48,52,8,64);
+ if(logo)picture(ctx,logo,74,42,86,86);
+ ctx.fillStyle='#fff';ctx.font='800 42px system-ui';
+ ctx.fillText('GAMER COMAYAGUA',logo?182:76,65,850);
+ roundBox(ctx,48,165,984,984,28,'#eef2f7');
+ ctx.save();ctx.clip();
+ if(product.soldOut)ctx.filter='grayscale(100%)';
+ const area=picture(ctx,photo,48,165,984,984);
+ ctx.filter='none';
+ if(area)markPhoto(ctx,marks,area);
+ else{
+  ctx.fillStyle='#435774';ctx.font='600 38px system-ui';ctx.textAlign='center';
+  ctx.fillText('Foto por consultar',540,640);
+ }
+ ctx.restore();
+ ctx.fillStyle='#fff';ctx.font='800 53px system-ui';
+ const name=lines(ctx,options.title||product.name,984,4);
+ name.forEach((line,i)=>ctx.fillText(line,48,1192+i*61,984));
+ let y=1208+name.length*61;
+ if(options.prices&&!product.soldOut){
+  ctx.fillStyle='#ff818e';ctx.font='850 82px system-ui';
+  ctx.fillText(options.money(product.price),48,y,984);
+  y+=101;
+ }
+ ctx.fillStyle='#dbe8f7';ctx.font='600 32px system-ui';
+ ctx.fillText(stockLabel(product,options.stockText)+'  ·  Ref. '+(product.ref||product.id),48,y,984);
+ roundBox(ctx,48,1696,984,125,24,'#fff');
+ ctx.fillStyle='#14243e';ctx.font='800 43px system-ui';
+ ctx.fillText('WhatsApp  +'+options.phone.slice(0,3)+' '+options.phone.slice(3,7)+'-'+options.phone.slice(7),80,1732,920);
+ ctx.fillStyle='#dbe8f7';ctx.font='26px system-ui';
+ ctx.fillText('Envíos a toda Honduras · Sujeto a confirmación',48,1850,984);
+ return {canvas,missing:!photo&&product.photo?1:0};
+}
 async function drawPage(options,items,index,total){
  const {title,prices,logo,watermark,phone,money,stockText}=options;
  const [brand,marks,photos]=await Promise.all([
@@ -335,7 +380,7 @@ function open(options){
   full.disabled=false;
   status.textContent='Preparando fotos de la página '+(index+1)+'…';
   try{
-   const result=await drawPage(activeOptions,plan[index],index,plan.length);
+   const result=single?await drawVerticalProduct(activeOptions,plan[index][0]):await drawPage(activeOptions,plan[index],index,plan.length);
    const data=await blob(result.canvas,'image/png');
    result.canvas.width=result.canvas.height=1;
    if(ticket!==version||!root.isConnected)return;
@@ -384,7 +429,7 @@ function open(options){
     status.textContent='Preparando PDF · '+(i-start)+' de '+(end-start)+' páginas…';
     const rendered=await Promise.all(Array.from({length:count},async(_,offset)=>{
      const j=i+offset;
-     const result=await drawPage(settings,documentPlan[j],j,documentPlan.length);
+     const result=single?await drawVerticalProduct(settings,documentPlan[j][0]):await drawPage(settings,documentPlan[j],j,documentPlan.length);
      missing+=result.missing;
      return encode(result.canvas);
     }));
@@ -436,7 +481,7 @@ function open(options){
  if(parent)observer.observe(parent,{childList:true,subtree:true});
 }
 async function downloadProduct(product,options){
- const {canvas,missing}=await drawPage({...options,title:product.name,prices:true},[product],0,1);
+ const {canvas,missing}=await drawVerticalProduct({...options,title:product.name,prices:true},product);
  try{
   if(missing)throw Error('La foto no está disponible para descargar. Probá guardar la ficha como PDF.');
   const url=URL.createObjectURL(await blob(canvas,'image/png'));
