@@ -216,7 +216,7 @@ async function drawCover(options, products, pageRange){
  ctx.fillText('Precios y existencias sujetos a confirmación',56,1370);
  return canvas;
 }
-const blob=(canvas,type)=>new Promise((resolve,reject)=>canvas.toBlob(data=>data?resolve(data):reject(Error('El navegador no pudo crear el archivo.')),type,.9));
+const blob=(canvas,type,quality=.9)=>new Promise((resolve,reject)=>canvas.toBlob(data=>data?resolve(data):reject(Error('El navegador no pudo crear el archivo.')),type,quality));
 function makePdf(pages){
  const chunks=[],offsets=[0],encoder=new TextEncoder();let length=0;
  const push=input=>{const bytes=typeof input==='string'?encoder.encode(input):input;chunks.push(bytes);length+=bytes.byteLength;};
@@ -275,6 +275,8 @@ function open(options){
  <button id="gcExportCopy" class="btn outline" type="button" hidden>Copiar enlace del catálogo</button>
  <a id="gcExportPng" class="btn red" hidden>Descargar PNG</a>
  <button id="gcExportPdf" class="btn outline" type="button" disabled>Preparar PDF</button>
+ <button id="gcExportFull" class="btn red" type="button" hidden disabled>Descargar catálogo completo</button>
+ <button id="gcExportCancel" class="btn outline" type="button" hidden>Cancelar preparación</button>
  <button id="gcExportOriginal" class="btn outline" type="button" hidden>Imprimir con fotos originales</button>
  <a id="gcExportPdfLink" class="btn red" hidden>Descargar PDF</a>
  <button id="gcExportShare" class="btn outline" type="button" hidden>Compartir archivo</button>
@@ -282,19 +284,20 @@ function open(options){
  </div></div><div class="gc-export-stage" id="gcExportStage"><img id="gcExportPreview" alt="Vista previa del catálogo" hidden></div></div>`;
  const $=id=>root.querySelector('#gcExport'+id);
  const source=$('Source'),page=$('Page'),title=$('Title'),stage=$('Preview'),status=$('Status');
- const original=$('Original');
+ const original=$('Original'),full=$('Full'),cancel=$('Cancel');
  const png=$('Png'),pdf=$('Pdf'),pdfLink=$('PdfLink'),share=$('Share'),view=$('View');
  const categoryMode=options.source==='category',single=options.source==='product';
  root.querySelector('h2').textContent=single?'Ficha para compartir':categoryMode?'Catálogo para compartir':'Catálogo de productos seleccionados';
- $('Group').hidden=!categoryMode;$('CoverField').hidden=single;$('Copy').hidden=!categoryMode;
+ $('Group').hidden=!categoryMode;$('CoverField').hidden=single;$('Copy').hidden=!categoryMode;full.hidden=single;
  if(categoryMode){
   source.add(new Option('Catálogo completo','all'));
   source.add(new Option(options.query?'Resultados de «'+options.query+'»':'Resultados actuales','result'));
   options.categories.forEach(name=>source.add(new Option(name,'category:'+name)));
   source.value=options.query||options.subcategory?'result':options.category?'category:'+options.category:'all';
  }
- let version=0,requestTimer,urls=[],pngFile,pdfFile,plan=[],activeOptions,exportItems=[];
+ let pdfJob=null,version=0,requestTimer,urls=[],pngFile,pdfFile,plan=[],activeOptions,exportItems=[];
  const clearLinks=()=>{
+  pdfJob=null;full.disabled=true;cancel.hidden=true;
   urls.forEach(url=>URL.revokeObjectURL(url));urls=[];
   png.hidden=pdfLink.hidden=share.hidden=view.hidden=original.hidden=true;stage.hidden=true;pdf.disabled=true;
   pngFile=pdfFile=null;
@@ -329,6 +332,7 @@ function open(options){
   const span=plan.length<=24?24:8;
   activeOptions={...options,title:title.value.trim()||titleFor(),prices:$('Prices').checked,watermark:$('Mark').checked?{...options.getWatermark(),enabled:true}:null};
   original.hidden=false;
+  full.disabled=false;
   status.textContent='Preparando fotos de la página '+(index+1)+'…';
   try{
    const result=await drawPage(activeOptions,plan[index],index,plan.length);
@@ -338,40 +342,72 @@ function open(options){
    const name=filename('-'+(index+1)+'.png');
    pngFile=new File([data],name,{type:'image/png'});
    const url=link(png,data,name);stage.src=url;stage.hidden=false;view.href=url;view.hidden=false;
-   pdf.disabled=false;
+   pdf.disabled=!!pdfJob;
    pdf.textContent=plan.length>span?'Preparar PDF · páginas '+(Math.floor(index/span)*span+1)+'–'+Math.min(plan.length,Math.floor(index/span)*span+span):'Preparar PDF';
    setShare(pngFile);
-   status.textContent=items.length+(items.length===1?' producto':' productos')+' · '+plan.length+(plan.length===1?' página':' páginas')+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
+   if(!pdfJob)status.textContent=items.length+(items.length===1?' producto':' productos')+' · '+plan.length+(plan.length===1?' página':' páginas')+(result.missing?' · '+result.missing+' fotos no disponibles para PNG. Usá Imprimir con fotos originales.':'');
   }catch(error){if(ticket===version)status.textContent=error.message;}
  }
  original.onclick=()=>{
   const index=Number(page.value)||0,start=Math.floor(index/8)*8,end=Math.min(start+8,plan.length);
   if(!printOriginal(activeOptions,plan,start,end))status.textContent='Permití ventanas emergentes para abrir la versión para imprimir.';
  };
- pdf.onclick=async()=>{
-  const span=plan.length<=24?24:8;
-  const ticket=version,index=Number(page.value)||0,start=Math.floor(index/span)*span,end=Math.min(start+span,plan.length),pages=[];
-  pdf.disabled=true;pdfLink.hidden=true;
+ async function preparePdf(complete){
+  if(pdfJob||!plan.length||!activeOptions)return;
+  const job={};
+  pdfJob=job;
+  const documentPlan=plan, settings=activeOptions;
+  const span=documentPlan.length<=24?24:8, index=Number(page.value)||0;
+  const start=complete?0:Math.floor(index/span)*span;
+  const end=complete?documentPlan.length:Math.min(start+span,documentPlan.length);
+  const pages=[];
+  const active=()=>pdfJob===job&&root.isConnected;
+  const quality=complete&&documentPlan.length>24?.72:.9;
+  let missing=0;
+  async function encode(canvas){
+   try{
+    const data=await blob(canvas,'image/jpeg',quality);
+    return {jpeg:new Uint8Array(await data.arrayBuffer()),width:canvas.width,height:canvas.height};
+   }finally{canvas.width=canvas.height=1;}
+  }
+  full.disabled=pdf.disabled=true;pdfLink.hidden=true;cancel.hidden=false;
+  pdfFile=null;setShare(pngFile);
   try{
    if(!single&&$('Cover').checked){
     status.textContent='Preparando portada…';
-    const cover=await drawCover(activeOptions,exportItems,'Páginas de productos '+(start+1)+' a '+end+' de '+plan.length);
-    pages.push({jpeg:new Uint8Array(await (await blob(cover,'image/jpeg')).arrayBuffer()),width:cover.width,height:cover.height});
-    cover.width=cover.height=1;
+    pages.push(await encode(await drawCover(settings,exportItems,'Páginas de productos '+(start+1)+' a '+end+' de '+documentPlan.length)));
    }
-   for(let i=start;i<end;i++){
-    if(ticket!==version||!root.isConnected)return;
-    status.textContent='Preparando PDF · página '+(i+1)+' de '+end+'…';
-    const {canvas}=await drawPage(activeOptions,plan[i],i,plan.length);
-    pages.push({jpeg:new Uint8Array(await (await blob(canvas,'image/jpeg')).arrayBuffer()),width:canvas.width,height:canvas.height});
-    canvas.width=canvas.height=1;
+   const parallel=complete?3:1;
+   for(let i=start;i<end;i+=parallel){
+    if(!active())return;
+    const count=Math.min(parallel,end-i);
+    status.textContent='Preparando PDF · '+(i-start)+' de '+(end-start)+' páginas…';
+    const rendered=await Promise.all(Array.from({length:count},async(_,offset)=>{
+     const j=i+offset;
+     const result=await drawPage(settings,documentPlan[j],j,documentPlan.length);
+     missing+=result.missing;
+     return encode(result.canvas);
+    }));
+    pages.push(...rendered);
    }
-   if(ticket!==version||!root.isConnected)return;
-   const data=makePdf(pages),name=filename((plan.length>span?'-'+(start+1)+'-'+end:'')+'.pdf');
-   pdfFile=new File([data],name,{type:'application/pdf'});link(pdfLink,data,name);setShare(pdfFile);
-   status.textContent='PDF listo para guardar o compartir.';
-  }catch(error){if(ticket===version)status.textContent=error.message;}
-  finally{if(ticket===version)pdf.disabled=false;}
+   if(!active())return;
+   const data=makePdf(pages);
+   const suffix=complete?'-completo.pdf':documentPlan.length>span?'-'+(start+1)+'-'+end+'.pdf':'.pdf';
+   const name=filename(suffix);
+   pdfFile=new File([data],name,{type:'application/pdf'});
+   pdfLink.textContent=complete?'Guardar PDF completo':'Descargar PDF';
+   link(pdfLink,pdfFile,name);setShare(pdfFile);
+   status.textContent='PDF listo · '+pages.length+' páginas'+(missing?' · '+missing+' fotos por consultar':'')+'.';
+   pdfLink.focus({preventScroll:true});
+  }catch(error){if(active())status.textContent=error.message;}
+  finally{if(active()){pdfJob=null;full.disabled=pdf.disabled=false;cancel.hidden=true;}}
+ }
+ pdf.onclick=()=>preparePdf(false);
+ full.onclick=()=>preparePdf(true);
+ cancel.onclick=()=>{
+  pdfJob=null;full.disabled=pdf.disabled=false;cancel.hidden=true;
+  status.textContent='Preparación cancelada.';
+  full.focus({preventScroll:true});
  };
  share.onclick=async()=>{
   const file=pdfFile||pngFile;
