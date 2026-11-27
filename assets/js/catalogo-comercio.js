@@ -661,7 +661,7 @@ function showBankAccounts(root){
     group.rows.map(function(row){
      var tigo=group.title==='Tigo Money';
      var context=tigo?group.title+' · '+row[0]:row[0];
-     var details=(tigo?group.title:row[0])+'\nTitular: '+holder;
+     var details=(tigo?group.title:row[0])+' · '+holder;
      var valueLabel=row[0]==='DNI'?'Copiar DNI':row[0]==='Kash'?'Copiar usuario':'Copiar número';
      return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd><dd class="gc-bank-row-actions">'+
       (row[0]==='DNI'?'':copyButton('Copiar nombre y titular',details,context))+
