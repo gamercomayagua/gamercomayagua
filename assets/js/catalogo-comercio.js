@@ -665,7 +665,8 @@ function showBankAccounts(root){
      var valueLabel=row[0]==='DNI'?'Copiar DNI':row[0]==='Kash'?'Copiar usuario':'Copiar número';
      return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd><dd class="gc-bank-row-actions">'+
       (row[0]==='DNI'?'':copyButton('Copiar nombre y titular',details,context))+
-      copyButton(valueLabel,row[1],context)+'</dd></div>';
+      copyButton(valueLabel,row[1],context)+
+      (group.title==='Cuentas bancarias'?copyButton('Copiar cuenta completa',details+'\n'+row[1],context):'')+'</dd></div>';
     }).join('')+
     '</dl></section>';
   }).join('')+
