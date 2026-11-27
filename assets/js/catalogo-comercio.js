@@ -646,9 +646,9 @@ function showBankAccounts(root){
  var panel=document.createElement('dialog');panel.className='gc-bank-panel';
  panel.setAttribute('aria-labelledby','gcBankHeading');
  var copyValues=[];
- function copyButton(label,value,context){
+ function copyButton(label,value,context,short,primary){
   var index=copyValues.push(value)-1;
-  return '<button type="button" class="btn outline gc-bank-copy-one" data-copy="'+index+'" aria-label="'+esc(label+' · '+context)+'">'+label+'</button>';
+  return '<button type="button" class="'+(short?'gc-bank-action'+(primary?' gc-bank-action-primary':''):'btn outline gc-bank-copy-one')+'" data-copy="'+index+'" aria-label="'+esc(label+' · '+context)+'">'+(short||label)+'</button>';
  }
  var allText=['Gamer Comayagua','Titular: '+holder].concat(groups.flatMap(function(group){
   return ['',group.title].concat(group.rows.map(function(row){return row.join(': ');}));
@@ -664,9 +664,9 @@ function showBankAccounts(root){
      var details=(tigo?group.title:row[0])+' · '+holder;
      var valueLabel=row[0]==='DNI'?'Copiar DNI':row[0]==='Kash'?'Copiar usuario':'Copiar número';
      return '<div><dt>'+row[0]+'</dt><dd>'+row[1]+'</dd><dd class="gc-bank-row-actions">'+
-      (row[0]==='DNI'?'':copyButton('Copiar nombre y titular',details,context))+
-      copyButton(valueLabel,row[1],context)+
-      (group.title==='Cuentas bancarias'?copyButton('Copiar cuenta completa',details+'\n'+row[1],context):'')+'</dd></div>';
+      (row[0]==='DNI'?'':copyButton('Copiar nombre y titular',details,context,'Titular'))+
+      copyButton(valueLabel,row[1],context,valueLabel.slice(7),true)+
+      (group.title==='Cuentas bancarias'?copyButton('Copiar cuenta completa',details+'\n'+row[1],context,'Todo de esta cuenta'):'')+'</dd></div>';
     }).join('')+
     '</dl></section>';
   }).join('')+
@@ -678,7 +678,7 @@ function showBankAccounts(root){
   var status=panel.querySelector('.gc-bank-status');
   try{
    await navigator.clipboard.writeText(copyValues[Number(button.dataset.copy)]);
-   status.textContent=button.textContent.replace('Copiar ','Copiado: ')+'.';
+   status.textContent='Copiado al portapapeles.';
   }catch(error){status.textContent='Podés seleccionar los datos y copiarlos manualmente.';}
  });
  panel.addEventListener('close',function(){panel.remove();});

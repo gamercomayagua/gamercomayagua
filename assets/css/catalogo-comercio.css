@@ -1480,3 +1480,29 @@ footer.gc-store-footer {
   background:#18543d;
   color:#fff;
 }
+
+.gc-bank-content .gc-bank-row-actions {
+  gap:0 8px;
+}
+.gc-bank-action {
+  min-height:44px;
+  padding:0 5px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#435875;
+  font:600 .8rem/1.2 system-ui,sans-serif;
+  cursor:pointer;
+}
+.gc-bank-action::first-letter {
+  text-transform:uppercase;
+}
+.gc-bank-action-primary {
+  padding-inline:11px;
+  color:#15543d;
+  background:#edf6f0;
+}
+.gc-bank-action:hover,.gc-bank-action:focus-visible {
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
