@@ -36,7 +36,7 @@ function prepare(list){return (Array.isArray(list)?list:[]).filter(function(p){r
  }
  var stock=p.stock===null||p.stock===undefined||p.stock===''?null:Number(p.stock);
  stock=Number.isInteger(stock)&&stock>=0?stock:null;
- var soldOut=p.soldOut===true||p.status==='AGOTADO'||(stock!==null&&stock<(p.own?1:4));
+ var soldOut=p.soldOut===true||p.status==='AGOTADO'||(stock!==null&&stock<(p.own?3:4));
  return {id:String(p.id),ref:String(p.ref||p.id),own:p.own===true,name:String(p.name),price:integer(p.price),regularPrice:integer(p.regularPrice),discount:Number(p.discount)||0,promotion:p.promotion===true||integer(p.regularPrice)>integer(p.price),cod:p.cod!==false,sku:String(p.sku||''),code:String(p.code||''),category:String(p.category||''),subcategory:String(p.subcategory||''),description:String(p.description||''),photo:cleanUrl(p.photo),photoFallback:cleanUrl(p.photoFallback),freeShipping:p.freeShipping===true||p.freeShipping==='SI',soldOut:soldOut,stock:stock,stockVerifiedAt:p.stockVerifiedAt?String(p.stockVerifiedAt):null};
 });}
 function stockText(p){
